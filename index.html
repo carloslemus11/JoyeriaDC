@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Joyería DC</title>
-<meta name="description" content="Joyas en oro 18K en Ibagué — anillos, cadenas y pulseras. Cotiza por WhatsApp, califica tu experiencia y déjanos tu sugerencia.">
+<meta name="description" content="Joyas en oro 18K en Ibagué — anillos, cadenas y pulseras. Cotiza por WhatsApp y déjanos tu sugerencia.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -25,53 +25,13 @@
   <ul class="nav-links" id="navLinks">
     <li><a href="#coleccion">Colección</a></li>
     <li><a href="#atelier">Atelier</a></li>
-    <li><a href="#resenas">Reseñas</a></li>
     <li><a href="#sugerencias">Sugerencias</a></li>
     <li><a href="#ubicacion">Ubicación</a></li>
   </ul>
   <div class="nav-right">
-    <button class="btn btn-ghost btn-sm nav-cuenta" id="cuentaBtn" type="button">Cuenta</button>
     <a class="btn btn-fill btn-sm nav-cta wa-link" id="navWa" href="#" data-wa-msg="Hola, quiero cotizar una joya de Joyería DC." data-cotiza="Nav" data-cotiza-origen="nav" target="_blank" rel="noopener">Cotizar</a>
   </div>
 </nav>
-
-<div class="dc-modal" id="cuentaModal" hidden>
-  <div class="dc-modal-box">
-    <button class="dc-modal-x" type="button" data-cerrar aria-label="Cerrar">×</button>
-
-    <div id="cuentaAnon">
-      <div class="dc-tabs">
-        <button class="dc-tab is-active" type="button" data-modo="entrar">Entrar</button>
-        <button class="dc-tab" type="button" data-modo="crear">Crear cuenta</button>
-      </div>
-      <form id="cuentaForm" class="dc-form">
-        <label class="dc-field"><span>Correo</span>
-          <input type="email" id="ctaEmail" autocomplete="email" required></label>
-        <label class="dc-field"><span>Contraseña</span>
-          <input type="password" id="ctaPass" autocomplete="current-password" minlength="6" required></label>
-        <button class="btn btn-fill" type="submit" id="ctaSubmit">Entrar</button>
-        <p class="dc-msg" id="ctaMsg" hidden></p>
-      </form>
-      <p class="dc-nota">Tu cuenta es solo para guardar piezas favoritas. Las compras siguen siendo por WhatsApp.</p>
-    </div>
-
-    <div id="cuentaAuth" hidden>
-      <p class="dc-hola">Hola, <span id="ctaWho"></span></p>
-      <button class="btn btn-fill" type="button" id="verFavsBtn">Ver mis favoritos</button>
-      <button class="btn btn-ghost" type="button" id="ctaLogout">Salir</button>
-    </div>
-  </div>
-</div>
-
-<div class="dc-modal" id="favModal" hidden>
-  <div class="dc-modal-box">
-    <button class="dc-modal-x" type="button" data-cerrar aria-label="Cerrar">×</button>
-    <h3 class="dc-modal-title">Mis favoritos</h3>
-    <div id="favList" class="fav-list"></div>
-    <a class="btn btn-fill wa-link" id="favCotizar" href="#" data-cotiza="Favoritos" data-cotiza-origen="favoritos" target="_blank" rel="noopener" hidden>Cotizar mis favoritos por WhatsApp</a>
-    <p class="fav-empty" id="favEmpty" hidden>Aún no has guardado piezas. Toca el corazón en las que te gusten.</p>
-  </div>
-</div>
 
 <main id="main">
   <header class="hero" id="top">
@@ -152,38 +112,6 @@
           <p class="story-index">03</p>
           <h3 data-cs="atelier3_titulo">Cerca de ti, en Ibagué.</h3>
           <p data-cs="atelier3_texto">Nos encuentras en C.C. Los Panches, local 53. Atención directa, sin intermediarios — y seguimiento por WhatsApp antes, durante y después de tu compra.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="resenas">
-    <div class="container">
-      <div class="section-head reveal">
-        <div>
-          <p class="eyebrow">Reseñas</p>
-          <h2 style="font-size:clamp(28px,3.4vw,42px)">Califica tu experiencia.</h2>
-        </div>
-        <p class="lede">Tu calificación nos ayuda a mejorar.</p>
-      </div>
-
-      <div class="rating-panel reveal">
-        <div class="rating-summary">
-          <span class="avg-score" id="avgScore">—</span>
-          <div class="avg-stars" id="avgStars" aria-hidden="true"></div>
-          <span class="rating-count" id="ratingCount">Sé el primero en calificar</span>
-        </div>
-        <div class="rating-input">
-          <p class="lede">¿Cómo fue tu experiencia con Joyería DC?</p>
-          <div class="stars-input" id="starsInput" role="radiogroup" aria-label="Calificar servicio de 1 a 5 estrellas">
-            <button type="button" class="star-btn" data-value="1" aria-label="1 estrella" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg></button>
-            <button type="button" class="star-btn" data-value="2" aria-label="2 estrellas" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg></button>
-            <button type="button" class="star-btn" data-value="3" aria-label="3 estrellas" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg></button>
-            <button type="button" class="star-btn" data-value="4" aria-label="4 estrellas" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg></button>
-            <button type="button" class="star-btn" data-value="5" aria-label="5 estrellas" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg></button>
-          </div>
-          <p class="rating-thanks" id="ratingThanks" hidden>Gracias por calificarnos — tu voto ya quedó registrado.</p>
-          <p class="rating-thanks" id="ratingError" hidden style="color:#B3261E;">No se pudo registrar tu calificación. Intenta de nuevo.</p>
         </div>
       </div>
     </div>
@@ -279,7 +207,6 @@
           <ul>
             <li><a href="#coleccion">Colección</a></li>
             <li><a href="#atelier">Atelier</a></li>
-            <li><a href="#resenas">Reseñas</a></li>
             <li><a href="#sugerencias">Sugerencias</a></li>
           </ul>
         </div>

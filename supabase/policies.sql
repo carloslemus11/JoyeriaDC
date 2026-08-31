@@ -1,11 +1,12 @@
--- Joyería DC — RLS y políticas (Fase 1)
+-- Joyería DC — RLS y políticas. Fuente de verdad del estado actual.
 --
--- Estado: YA APLICADO (migraciones `fase1_rls_politicas` y
--- `fase1_is_admin_a_schema_privado`) el 2026-08-31.
+-- Estado: aplicado vía migraciones. `perfiles` se recreó el 2026-08-31
+-- (migración `reparar_perfiles`); las políticas de `calificaciones` y
+-- `favoritos` se retiraron ese mismo día.
 --
 -- Regla general:
 --   * Público (anon): puede LEER catálogo/textos activos; puede INSERTAR
---     calificaciones, sugerencias y cotizaciones. Nada más.
+--     sugerencias, cotizaciones y visitas. Nada más.
 --   * Admin (usuario con fila en public.perfiles, rol='admin'): acceso total.
 
 -- Helper: ¿el usuario actual es admin?
@@ -31,11 +32,11 @@ $$;
 alter table public.categorias      enable row level security;
 alter table public.piezas          enable row level security;
 alter table public.pieza_fotos     enable row level security;
-alter table public.calificaciones  enable row level security;
 alter table public.sugerencias     enable row level security;
 alter table public.cotizaciones    enable row level security;
 alter table public.contenido_sitio enable row level security;
 alter table public.perfiles        enable row level security;
+alter table public.visitas         enable row level security;
 
 -- ---------- Catálogo ----------
 create policy categorias_select_publico on public.categorias
@@ -63,12 +64,6 @@ create policy contenido_select_publico on public.contenido_sitio
 create policy contenido_admin_todo on public.contenido_sitio
   for all using (private.is_admin()) with check (private.is_admin());
 
--- ---------- Calificaciones ----------
-create policy calificaciones_insert_publico on public.calificaciones
-  for insert with check (estrellas between 1 and 5);
-create policy calificaciones_select_publico on public.calificaciones
-  for select using (true);
-
 -- ---------- Sugerencias ----------
 create policy sugerencias_insert_publico on public.sugerencias
   for insert with check (
@@ -90,7 +85,9 @@ create policy cotizaciones_admin_select on public.cotizaciones
 create policy perfiles_admin_todo on public.perfiles
   for all using (private.is_admin()) with check (private.is_admin());
 
--- ---------- Favoritos (Fase 6): cada quien gestiona solo los suyos ----------
-alter table public.favoritos enable row level security;
-create policy favoritos_propios on public.favoritos
-  for all using (usuario_id = auth.uid()) with check (usuario_id = auth.uid());
+-- ---------- Visitas ----------
+-- El público registra su propia visita; solo el admin puede leerlas.
+create policy visitas_insert_publico on public.visitas
+  for insert with check (true);
+create policy visitas_admin_select on public.visitas
+  for select using (private.is_admin());

@@ -42,6 +42,7 @@
         <button class="admin-tab" data-tab="categorias">Categorías</button>
         <button class="admin-tab" data-tab="sugerencias">Sugerencias</button>
         <button class="admin-tab" data-tab="cotizaciones">Cotizaciones</button>
+        <button class="admin-tab" data-tab="visitas">Visitas</button>
         <button class="admin-tab" data-tab="textos">Textos</button>
       </nav>
       <div class="admin-user">
@@ -73,11 +74,7 @@
       </section>
 
       <section id="tab-sugerencias" class="admin-tabpane" hidden>
-        <div class="admin-pane-head"><h2>Reseñas y sugerencias</h2></div>
-        <div id="resumenResenas" class="admin-resumen">
-          <div><strong id="resenasProm">—</strong><span>promedio</span></div>
-          <div><strong id="resenasTotal">—</strong><span>calificaciones</span></div>
-        </div>
+        <div class="admin-pane-head"><h2>Sugerencias</h2></div>
         <h3 class="admin-sub">Sugerencias recibidas</h3>
         <div id="sugList" class="admin-list"></div>
       </section>
@@ -92,6 +89,22 @@
         <div id="cotizRanking" class="admin-list"></div>
         <h3 class="admin-sub">Últimos clics</h3>
         <div id="cotizLog" class="admin-list"></div>
+      </section>
+
+      <section id="tab-visitas" class="admin-tabpane" hidden>
+        <div class="admin-pane-head"><h2>Visitas</h2></div>
+        <div id="visitasResumen" class="admin-resumen">
+          <div><strong id="visitasHoy">—</strong><span>hoy</span></div>
+          <div><strong id="visitas30">—</strong><span>últimos 30 días</span></div>
+        </div>
+        <h3 class="admin-sub">Por día (últimos 30)</h3>
+        <div id="visitasPorDia" class="admin-list"></div>
+        <h3 class="admin-sub">Por fuente</h3>
+        <div id="visitasPorFuente" class="admin-list"></div>
+        <h3 class="admin-sub">Por dispositivo</h3>
+        <div id="visitasPorDispositivo" class="admin-list"></div>
+        <h3 class="admin-sub">Por país</h3>
+        <div id="visitasPorPais" class="admin-list"></div>
       </section>
 
       <section id="tab-textos" class="admin-tabpane" hidden>

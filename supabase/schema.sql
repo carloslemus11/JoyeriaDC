@@ -1,9 +1,15 @@
--- Joyería DC — esquema base (Fase 1). Tablas para las fases 1-5.
+-- Joyería DC — esquema base. Fuente de verdad del esquema actual.
 --
--- Estado: YA APLICADO al proyecto Supabase (ardfyksmwwwignoejaft) el 2026-08-31
--- como migración `fase1_schema_inicial`. Este archivo es la fuente de verdad
--- del esquema; si se recrea el proyecto, correr en orden: schema.sql,
--- policies.sql, storage.sql (SQL Editor de Supabase).
+-- Estado: aplicado al proyecto Supabase (ardfyksmwwwignoejaft) vía migraciones.
+-- Si se recrea el proyecto, correr en orden: schema.sql, policies.sql,
+-- storage.sql, funciones.sql (SQL Editor de Supabase).
+--
+-- Historial relevante:
+--   * Fase 3 (calificaciones) y Fase 6 (cuentas de cliente / favoritos) fueron
+--     RETIRADAS el 2026-08-31 (migraciones `retirar_resenas`, `visitas_v2` y
+--     `quitar_favoritos_agregar_visitas`). Ya no existen las tablas
+--     `calificaciones` ni `favoritos`.
+--   * `visitas` (manejo de tráfico) se agregó el 2026-08-31 (migración `visitas_v2`).
 
 create extension if not exists pgcrypto;
 
@@ -41,14 +47,6 @@ create table public.pieza_fotos (
   orden        int  not null default 0
 );
 
--- Calificaciones de servicio (1-5, anónimas)
-create table public.calificaciones (
-  id          uuid primary key default gen_random_uuid(),
-  estrellas   int  not null check (estrellas between 1 and 5),
-  device_hash text,
-  created_at  timestamptz not null default now()
-);
-
 -- Sugerencias de visitantes (moderación previa antes de mostrarse)
 create table public.sugerencias (
   id         uuid primary key default gen_random_uuid(),
@@ -74,6 +72,20 @@ create table public.contenido_sitio (
   actualizado_at timestamptz not null default now()
 );
 
+-- Manejo de visitas (migración visitas_v2). Un registro por carga de página del
+-- sitio público. Anónimo: sin IP, sin identificador persistente, sin user-agent.
+create table public.visitas (
+  id               uuid primary key default gen_random_uuid(),
+  path             text,
+  seccion          text,
+  fuente           text check (fuente in ('instagram','google','facebook','whatsapp','directo','otro')),
+  referrer_dominio text,
+  dispositivo      text check (dispositivo in ('movil','tablet','escritorio')),
+  pais             text,               -- código ISO-2 aproximado (Netlify Edge Function)
+  created_at       timestamptz not null default now()
+);
+create index visitas_created_idx on public.visitas (created_at desc);
+
 -- Perfiles de administradores (enlazados a auth.users)
 create table public.perfiles (
   id         uuid primary key references auth.users(id) on delete cascade,
@@ -98,12 +110,3 @@ $$;
 create trigger piezas_touch_updated_at
   before update on public.piezas
   for each row execute function public.touch_updated_at();
-
--- Fase 6 — favoritos de cliente (migración fase6_favoritos)
-create table public.favoritos (
-  usuario_id uuid not null references auth.users(id) on delete cascade,
-  pieza_id   uuid not null references public.piezas(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (usuario_id, pieza_id)
-);
-create index favoritos_usuario_idx on public.favoritos(usuario_id);

@@ -20,20 +20,22 @@ JOYERIA.DC./
 │   ├── config.js                       # SUPABASE_URL + publishable key + WA_NUMBER (público por diseño, SÍ se versiona)
 │   ├── supabase-client.js              # Cliente Supabase compartido (sitio + admin) + healthcheck
 │   ├── catalogo.js                     # Lectura del catálogo (categorías/piezas/fotoUrl) — Fase 2
-│   ├── interacciones.js                # Calificaciones, sugerencias, registro de cotizaciones — Fases 3-4
+│   ├── interacciones.js                # Sugerencias, registro de cotizaciones y registro de visitas
 │   ├── contenido.js                    # Textos editables del sitio ([data-cs]) — Fase 5
-│   ├── cuenta.js                       # Cuentas de cliente + favoritos — Fase 6
 │   └── piezas/                         # Respaldo de las 9 fotos (ya en Storage; no se sirven)
 ├── admin/
-│   ├── index.html                      # Panel de administración (Fase 1: solo login + placeholder)
+│   ├── index.html                      # Panel de administración (tabs Piezas/Categorías/Sugerencias/Cotizaciones/Visitas/Textos)
 │   ├── admin.css
 │   └── admin.js                        # Login por correo/contraseña + chequeo de rol admin en public.perfiles
+├── netlify/
+│   └── edge-functions/
+│       └── geo-pais.js                 # Inyecta <meta name="dc-pais"> con el país aproximado (para el registro de visitas)
 ├── supabase/
 │   ├── schema.sql                      # Tablas (fuente de verdad del esquema; ya aplicado)
 │   ├── policies.sql                    # RLS + políticas + private.is_admin() (ya aplicado)
 │   ├── storage.sql                     # Bucket "piezas" + políticas de Storage (ya aplicado)
 │   ├── seed-catalogo.sql               # Seed de categorías/piezas/fotos (Fase 2)
-│   ├── funciones.sql                   # resumen_calificaciones() (Fase 3)
+│   ├── funciones.sql                   # resumen_visitas() + notas de índices/seeds
 │   └── setup.md                        # Pasos de configuración; incluye los pendientes de Auth
 ├── docs/
 │   ├── specs/                           # Specs de desarrollo (los crea/actualiza el skill design-spec; no existe hasta el primero)
@@ -75,10 +77,10 @@ Sobre la estructura del sitio (post Fase 1):
 
 - Proyecto: `ardfyksmwwwignoejaft` — `https://ardfyksmwwwignoejaft.supabase.co`.
 - Esquema, RLS y Storage aplicados vía migraciones (`fase1_*`). Fuente de verdad en `supabase/*.sql`. Advisors de seguridad: sin hallazgos.
-- Tablas: `categorias`, `piezas`, `pieza_fotos`, `calificaciones`, `sugerencias`, `cotizaciones`, `contenido_sitio`, `perfiles`.
-- Regla RLS: el público (anon) solo lee catálogo/textos activos e inserta calificaciones/sugerencias/cotizaciones; todo lo demás exige sesión admin (`private.is_admin()` = tener fila en `public.perfiles` con `rol='admin'`).
+- Tablas: `categorias`, `piezas`, `pieza_fotos`, `sugerencias`, `cotizaciones`, `contenido_sitio`, `perfiles`, `visitas`. (Las tablas `calificaciones` y `favoritos` fueron retiradas el 2026-08-31 — ver "Estado de la migración por fases".)
+- Regla RLS: el público (anon) solo lee catálogo/textos activos e inserta sugerencias/cotizaciones/visitas; todo lo demás exige sesión admin (`private.is_admin()` = tener fila en `public.perfiles` con `rol='admin'`).
 - Bucket de Storage `piezas` (público en lectura, escritura solo admin) para las fotos del catálogo.
-- **Pendiente manual en el dashboard de Supabase** (no se puede por API): desactivar el registro público de usuarios, crear el usuario admin y hacer `insert into public.perfiles`. Pasos en `supabase/setup.md`.
+- **Pendiente manual en el dashboard de Supabase** (no se puede por API): **volver a desactivar** el registro público de usuarios (se activó en Fase 6, ya retirada), poner el Site URL, y activar "Leaked password protection". Pasos en `supabase/setup.md`.
 
 ### Estado de la migración por fases
 
@@ -87,16 +89,18 @@ Plan completo en `docs/plans/2026-08-31-migracion-supabase.md`. Spec en `docs/sp
 - **Fase 1 — Fundación:** EN CURSO. Hecho: esquema + RLS + Storage + git + reestructura a multi-archivo + `assets/config.js`/`supabase-client.js` + shell de `/admin` con login + `netlify.toml`. Falta: pasos de Auth en el dashboard, primer deploy a Netlify, verificación.
 - **Fase 2 — Catálogo + panel admin:** HECHA y verificada (2026-08-31). Catálogo (4 cat + 9 piezas) en Supabase; `assets/catalogo.js` + `assets/main.js` lo renderizan en el sitio público. Panel `/admin` completo (`admin/admin.js` + `admin/admin.css`): login + gate de admin, tabs Piezas/Categorías, CRUD con modal, activar/desactivar, borrar con confirmación in-app, subir/reemplazar foto a Storage, botón "Importar fotos iniciales". Las 9 fotos ya están en el bucket `piezas/catalogo/*` y el sitio las sirve desde Storage. `assets/piezas/` quedó como respaldo (ya no se sirve; se puede borrar). Verificado en el navegador con la sesión admin real: CRUD OK, trigger `updated_at` OK, anon no puede escribir.
   - **Notas para futuras fases del panel:** (1) `admin.css` tiene `[hidden]{display:none!important}` porque `.admin-modal`/`.admin-shell` usan `display:flex`. (2) NO usar `window.confirm`/`alert`/`prompt` — devuelven false/nada en varios navegadores; usar `confirmar()` de `admin/admin.js`. (3) el panel usa un único `#modal` + `#modalForm` reutilizado por `openModal()` y `confirmar()`.
-- **Fase 3 — Reseñas y sugerencias en base de datos:** HECHA y verificada (2026-08-31). Calificaciones y sugerencias persisten en Supabase; sugerencias con moderación previa (solo se publican las aprobadas desde `/admin`). Función `resumen_calificaciones()`. Nuevo módulo `assets/interacciones.js`. Panel: pestaña Sugerencias activa. Verificado en el navegador como anon y como admin (calificar, enviar sugerencia, aprobar → aparece en el sitio, ocultar, borrar; anon no puede autoaprobar).
+- **Fase 3 — Reseñas y sugerencias en base de datos:** HECHA (2026-08-31), luego **el widget de reseñas por estrellas se RETIRÓ** (2026-08-31, migración `retirar_resenas`) — nunca recibió calificaciones reales. Ya no existe la tabla `calificaciones` ni la función `resumen_calificaciones()`, ni la sección `#resenas` del sitio. **Las sugerencias siguen vivas:** persisten en `public.sugerencias` con moderación previa (solo se publican las `aprobada` desde `/admin`). Módulo `assets/interacciones.js`; panel: pestaña "Sugerencias".
 - **Fase 4 — Registro de cotizaciones:** HECHA (2026-08-31). Cada clic de `.wa-link` inserta en `public.cotizaciones` (best effort, no bloquea WhatsApp) con `etiqueta`/`origen` (`data-cotiza`/`data-cotiza-origen` en el HTML y en el render de la galería/categorías) y `pieza_id` cuando aplica. Panel: pestaña "Cotizaciones" (ranking + total 30 días + últimos 100). Índice `cotizaciones_created_idx`. Verificado: los clics se registran y WhatsApp abre igual; anon no puede leer cotizaciones.
 - **Fase 5 — Textos editables del sitio:** HECHA (2026-08-31). 20 claves en `public.contenido_sitio` (seed = texto que estaba en el HTML). `assets/contenido.js` aplica a `[data-cs]` al cargar (fallback: si falla, se quedan los del HTML). `hero_titulo` usa `*x*`→`<em>` y `\n`→`<br>` (`[data-cs-html]`). Panel: pestaña "Textos" (form agrupado + "Guardar cambios"). Verificado: cambios se reflejan al recargar; si Supabase cae, se ven los del HTML.
-- **Fase 6 — Cuentas de clientes:** HECHA y verificada end-to-end (2026-08-31) — el usuario autorizó construirla. Tabla `public.favoritos` (pk usuario+pieza, RLS "cada quien lo suyo"). `assets/cuenta.js` + modales `#cuentaModal`/`#favModal` + botón "Cuenta" en la nav + corazón por pieza. "Mis favoritos" arma un WhatsApp con la lista. **El registro público de usuarios está ACTIVADO** en Supabase Auth (se reactivó el 2026-08-31 tras haberlo apagado en Fase 1). "Confirm email" está OFF (registro sin fricción). Un registro nuevo NO obtiene fila en `perfiles` → no puede entrar al panel admin (probado: insert de pieza → 42501). Si un cliente logueado abre `/admin`, ve "no tiene acceso" y NO se le cierra su sesión de cliente (solo se cierra si intenta loguearse desde el propio panel). Verificado: registro, ♥ persiste tras recargar, quitar favorito, y el mensaje de WhatsApp con la lista.
+- **Fase 6 — Cuentas de clientes:** HECHA (2026-08-31) y luego **REVERTIDA** (2026-08-31, migración `quitar_favoritos_agregar_visitas` + limpieza de código). Se decidió que no aporta a un negocio 100% WhatsApp. Ya no existen la tabla `public.favoritos` ni `assets/cuenta.js`, ni el botón "Cuenta", los modales `#cuentaModal`/`#favModal` ni el corazón por pieza. **Pendiente:** volver a desactivar el registro público de usuarios en Supabase Auth (sigue activo desde Fase 6).
+- **Reparación de `perfiles` (2026-08-31, migración `reparar_perfiles`):** una sesión previa borró `public.perfiles` (además de `calificaciones` y `favoritos`), lo que dejó caída la galería pública (la política de `pieza_fotos` llama a `private.is_admin()`, que lee `perfiles`) y el login de `/admin`. Se recreó `perfiles` y se reasignó el rol admin a `cjlr0318@gmail.com` (único usuario).
+- **Manejo de visitas (2026-08-31, migración `visitas_v2`):** tabla `public.visitas` (un registro por carga de página: `path`, `seccion`, `fuente`, `referrer_dominio`, `dispositivo`, `pais`) — anónima, sin IP ni identificador persistente. RLS: insert público, select solo admin. `registrarVisita()` en `assets/interacciones.js` (best effort, llamada desde `main.js`). El país lo aporta la Netlify Edge Function `netlify/edge-functions/geo-pais.js` (inyecta `<meta name="dc-pais">`). Panel: pestaña "Visitas" (`resumen_visitas()` → hoy, 30 días, por día, por fuente/dispositivo/país). Spec/plan: `docs/{specs,plans}/2026-08-31-visitas-y-reparacion-perfiles.md`. **Al re-desplegar en Netlify hay que incluir `netlify/edge-functions/`** o el país deja de registrarse.
 
 ## Modelo de negocio reflejado en el sitio
 
 - **No hay pasarela de pago ni checkout online.** Todo botón de "Comprar" o "Cotizar" abre WhatsApp (`wa.me`) con un mensaje pre-escrito mencionando la pieza específica. Así es como opera el negocio realmente (cotización + venta por WhatsApp), y así se decidió mantenerlo — no inventar un método de pago que no existe.
 - No hay precios ni horario de atención publicados en el sitio porque no se tiene esa información confirmada; mejor omitirlo que inventarlo.
-- Las reseñas (calificación por estrellas) y las sugerencias arrancan **vacías** a propósito — nada de testimonios o calificaciones de relleno. Se llenan solo con interacciones reales de visitantes.
+- Las sugerencias arrancan **vacías** a propósito — nada de testimonios de relleno. Se llenan solo con interacciones reales de visitantes. (El widget de calificación por estrellas existió y se retiró — ver Fase 3.)
 
 ## Decisiones de diseño
 
@@ -143,7 +147,7 @@ Hay dos sistemas de fondo "seda", uno CSS puro (el original) y uno fotográfico 
   --photo-champagne: url("data:image/webp;base64,...");  /* sin usar actualmente, ver nota abajo */
   --photo-ivory: url("data:image/webp;base64,...");       /* la que está en uso */
   ```
-  - Se usa **una sola** de las dos fotos (`--photo-ivory`, seda blanca/marfil) en **toda la página**: hero, Colección (`#coleccion`), Atelier y Sugerencias (comparten clase `.atelier`), Reseñas (`#resenas`), Ubicación (`.loc`) y footer. Cada sección la aplica así:
+  - Se usa **una sola** de las dos fotos (`--photo-ivory`, seda blanca/marfil) en **toda la página**: hero, Colección (`#coleccion`), Atelier y Sugerencias (comparten clase `.atelier`), Ubicación (`.loc`) y footer. Cada sección la aplica así:
     ```css
     background-color: var(--surface); /* fallback sólido mientras carga / si algo falla */
     background-image:
@@ -180,7 +184,6 @@ No existe un archivo de logo real (se buscó en Canva y en carpetas locales del 
 | Hero | `#top` | Titular, bajada, botones CTA, fila de stats (18K / seguidores IG / local), logo grande |
 | Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas — **ambas se cargan desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Cada pieza abre WhatsApp con su nombre. Estados de carga (shimmer) y de error (mensaje + WhatsApp) en `catalogo`. |
 | Atelier | `#atelier` | 3 bloques "por qué elegirnos" (oro 18K real, diseño con carácter, atención en Ibagué) |
-| Reseñas | `#resenas` | Widget de calificación 1-5 estrellas → tabla `calificaciones`; muestra promedio + total reales |
 | Sugerencias | `#sugerencias` | Formulario → tabla `sugerencias` (pendiente); la lista pública solo muestra las aprobadas por el dueño |
 | Ubicación | `#ubicacion` | Dirección, WhatsApp, Instagram, botón "Cómo llegar" (Google Maps) |
 | Footer | — | Resumen de marca, links rápidos, contacto |
@@ -189,13 +192,13 @@ No existe un archivo de logo real (se buscó en Canva y en carpetas locales del 
 ## Funcionalidad / interactividad
 
 - **Botones de WhatsApp**: cualquier elemento con clase `wa-link` y atributo `data-wa-msg="..."` recibe automáticamente (vía JS al cargar) un `href` a `wa.me/12405933943?text=...` con ese mensaje. Así se arma cada botón de cotización/compra sin repetir el número a mano.
-- **Calificación de servicio** (Fase 3): 5 botones de estrella; al hacer clic se inserta en `public.calificaciones` (RLS: anon inserta 1-5) y se repinta el promedio con la función `public.resumen_calificaciones()` (RPC). Un flag `localStorage["dc_rated"]` evita repetir en el mismo dispositivo (riesgo aceptado, evadible). Lógica en `assets/main.js` (`initRatings`) + `assets/interacciones.js`. Ya no existe `#ratingLog`.
-- **Sugerencias** (Fase 3): formulario → `public.sugerencias` con `estado='pendiente'`. El sitio público solo lista las `estado='aprobada'` (RLS). El dueño modera en `/admin` → pestaña **Sugerencias** (Aprobar / Ocultar / Borrar) que además muestra el resumen de calificaciones. Lógica en `assets/main.js` (`initSuggestions`) + `assets/interacciones.js` + `admin/admin.js` (`refreshSugerencias`).
+- **Sugerencias** (Fase 3): formulario → `public.sugerencias` con `estado='pendiente'`. El sitio público solo lista las `estado='aprobada'` (RLS). El dueño modera en `/admin` → pestaña **Sugerencias** (Aprobar / Ocultar / Borrar). Lógica en `assets/main.js` (`initSuggestions`) + `assets/interacciones.js` + `admin/admin.js` (`refreshSugerencias`).
+- **Registro de visitas**: `registrarVisita()` en `assets/interacciones.js` inserta una fila en `public.visitas` por carga de página (best effort, sin `await`, llamada desde `initSitio` en `main.js`). Deriva `fuente` del dominio del `document.referrer`, `dispositivo` del user-agent, `pais` del `<meta name="dc-pais">` que inyecta la Edge Function. Panel: pestaña "Visitas" (`admin/admin.js` → `refreshVisitas()` → RPC `resumen_visitas()`).
 - **Scroll-reveal**: `IntersectionObserver` agrega la clase `.is-visible` a elementos `.reveal` cuando entran en pantalla.
-- **Nav**: se vuelve translúcida/blur al hacer scroll; menú hamburguesa en móvil con `aria-expanded`. Botón "Cuenta" (Fase 6) junto a "Cotizar".
+- **Nav**: se vuelve translúcida/blur al hacer scroll; menú hamburguesa en móvil con `aria-expanded`. Solo el botón "Cotizar" a la derecha (el "Cuenta" de Fase 6 se retiró).
 - **Registro de cotizaciones** (Fase 4): un listener delegado en `document` (captura) sobre `.wa-link` inserta en `cotizaciones` antes de abrir WhatsApp. No usa `await` (best effort). La galería y las categorías traen `data-cotiza`/`data-cotiza-origen`/`data-pieza-id`; los `.wa-link` estáticos traen `data-cotiza`/`data-cotiza-origen` en el HTML.
 - **Textos editables** (Fase 5): elementos con `data-cs="clave"` (y `data-cs-html` para el h1 del hero). `assets/contenido.js` los rellena desde `contenido_sitio`. Si la clave no existe o la carga falla, se queda el texto del HTML.
-- **Cuentas de cliente + favoritos** (Fase 6): el mismo cliente `sb` sirve para clientes y para el admin; la diferencia es solo la fila en `perfiles`. Corazón por pieza; sin sesión abre `#cuentaModal`. `#favModal` lista los favoritos y arma un WhatsApp con todos. **El registro público debe estar activado en Supabase Auth para que funcione.**
+- **País de la visita** (Netlify Edge Function `netlify/edge-functions/geo-pais.js`): lee `context.geo.country.code` e inyecta `<meta name="dc-pais" content="XX">` en `<head>` de la portada. No usa cookies. Declarada en `netlify.toml` (`[[edge_functions]]`, paths `/` y `/index.html`). Si al desplegar falta la carpeta, las visitas se registran igual con país "Desconocido".
 
 ## Fuentes de las fotos de producto
 
@@ -265,8 +268,8 @@ El usuario subió dos fotos de tela de seda (stock de Pexels, no de su negocio) 
 
 ## Pendiente / en curso
 
-- **Migración a Supabase — Fases 1 a 6 HECHAS y verificadas (2026-08-31), incluido en producción.**
-- **EN PRODUCCIÓN:** <https://joyeriadc.netlify.app> (admin: `/admin/`). Publicado con **Netlify Drop** (arrastrar carpeta), NO conectado a GitHub todavía → para actualizar hay que volver a arrastrar la carpeta a app.netlify.com/drop, o conectar el repo `carloslemus11/JoyeriaDC` en Netlify. El repo local tiene el remote configurado pero el push aún no se hizo (requiere credenciales de GitHub del usuario).
-- Verificado en producción: catálogo desde la base, fotos desde Storage, `/admin` con login, registro de cliente + favoritos. Sin errores de consola/CSP/CORS.
-- Pendientes menores en el dashboard de Supabase: (1) activar "Leaked password protection" (único advisor). (2) poner el **Site URL** = `https://joyeriadc.netlify.app` en Authentication → URL Configuration. (3) SMTP propio si se quiere reactivar "Confirm email" para clientes.
-- `revision-final` todavía no se ha corrido ni una vez — buen momento para correrlo ahora que está en producción.
+- **Migración a Supabase — Fases 1 a 5 HECHAS y verificadas (2026-08-31), en producción.** Fase 6 (cuentas de cliente) se hizo y se **revirtió**. Fase 3 (reseñas por estrellas) se **retiró** (sugerencias siguen).
+- **Manejo de visitas + reparación de `perfiles` — IMPLEMENTADO (2026-08-31).** Spec/plan en `docs/{specs,plans}/2026-08-31-visitas-y-reparacion-perfiles.md`. Migraciones aplicadas: `reparar_perfiles`, `retirar_resenas`, `visitas_v2`. Falta: re-desplegar el sitio a producción (con `netlify/edge-functions/`) y verificar en vivo.
+- **EN PRODUCCIÓN:** <https://joyeriadc.netlify.app> (admin: `/admin/`). Publicado con **Netlify Drop** (arrastrar carpeta), NO conectado a GitHub todavía → para actualizar hay que volver a arrastrar la carpeta a app.netlify.com/drop (incluyendo `netlify/edge-functions/`), o conectar el repo `carloslemus11/JoyeriaDC` en Netlify. El repo local tiene el remote configurado pero el push aún no se hizo (requiere credenciales de GitHub del usuario).
+- Pendientes en el dashboard de Supabase: (1) **volver a desactivar el registro público de usuarios** (se activó en Fase 6). (2) activar "Leaked password protection". (3) poner el **Site URL** = `https://joyeriadc.netlify.app` en Authentication → URL Configuration.
+- `revision-final` todavía no se ha corrido ni una vez.

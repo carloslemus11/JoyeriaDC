@@ -34,12 +34,18 @@ supabase/
   schema.sql          # tablas
   policies.sql        # RLS + políticas
   storage.sql         # bucket "piezas"
+  funciones.sql       # funciones RPC (resumen_visitas, …)
   setup.md            # pasos de configuración (incluye los pendientes de Auth)
+netlify/
+  edge-functions/
+    geo-pais.js       # inyecta el país aproximado del visitante (registro de visitas)
 netlify.toml
 ```
 
-No hay paso de build. Las fotos de producto siguen embebidas como `data:` en
-`index.html` (se mueven a Supabase Storage en la Fase 2).
+No hay paso de build. El catálogo y las fotos viven en Supabase (Storage). El
+manejo de visitas registra cada carga de página en `public.visitas` (anónimo, sin
+IP); el país lo aporta la Edge Function `netlify/edge-functions/geo-pais.js` — hay
+que incluir esa carpeta al desplegar.
 
 ## Desarrollo local
 
@@ -52,12 +58,14 @@ archivo con `file://`) porque `main.js` y `admin.js` son módulos ES.
 
 ## Configurar Supabase
 
-Ver [`supabase/setup.md`](supabase/setup.md). El esquema, las políticas y el
-Storage ya están aplicados. Falta (en el dashboard de Supabase):
+Ver [`supabase/setup.md`](supabase/setup.md). El esquema, las políticas, el
+Storage y las funciones ya están aplicados, y el usuario admin ya existe. Falta
+(en el dashboard de Supabase):
 
-1. Desactivar el registro público de usuarios.
-2. Crear el usuario administrador.
-3. Insertar su fila en `public.perfiles` con `rol = 'admin'`.
+1. **Volver a desactivar** el registro público de usuarios (se activó en la Fase 6,
+   ya retirada).
+2. Poner el Site URL = `https://joyeriadc.netlify.app`.
+3. Activar "Leaked password protection".
 
 ## Publicar en Netlify
 

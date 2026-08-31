@@ -87,13 +87,14 @@ function initPanel() {
   panelReady = true;
 
   const tabs = [...document.querySelectorAll(".admin-tab[data-tab]")];
-  const panes = ["piezas", "categorias", "sugerencias", "cotizaciones", "textos"];
+  const panes = ["piezas", "categorias", "sugerencias", "cotizaciones", "visitas", "textos"];
   tabs.forEach((b) => {
     b.addEventListener("click", () => {
       tabs.forEach((x) => x.classList.toggle("is-active", x === b));
       panes.forEach((p) => { $("tab-" + p).hidden = b.dataset.tab !== p; });
       if (b.dataset.tab === "sugerencias") refreshSugerencias();
       if (b.dataset.tab === "cotizaciones") refreshCotizaciones();
+      if (b.dataset.tab === "visitas") refreshVisitas();
       if (b.dataset.tab === "textos") refreshTextos();
     });
   });
@@ -110,16 +111,8 @@ function initPanel() {
   checkBucketVacio();
 }
 
-/* ---------- reseñas y sugerencias ---------- */
+/* ---------- sugerencias ---------- */
 async function refreshSugerencias() {
-  // resumen de calificaciones
-  const res = await sb.rpc("resumen_calificaciones");
-  if (!res.error) {
-    const r = Array.isArray(res.data) ? res.data[0] : res.data;
-    $("resenasProm").textContent = r && r.promedio != null ? Number(r.promedio).toFixed(1) : "—";
-    $("resenasTotal").textContent = r && r.total != null ? r.total : "0";
-  }
-
   const { data, error } = await sb
     .from("sugerencias")
     .select("*")
@@ -187,6 +180,44 @@ async function refreshCotizaciones() {
   lg.innerHTML = rows.length
     ? rows.slice(0, 100).map((r) => `<div class="admin-row"><div class="admin-row-main"><strong>${esc(nombreDe(r))}</strong><span class="admin-mono">${esc(r.origen || "")} · ${new Date(r.created_at).toLocaleString("es-CO")}</span></div></div>`).join("")
     : '<p class="admin-empty">Sin registros.</p>';
+}
+
+/* ---------- visitas ---------- */
+const VISITAS_ETIQUETAS = {
+  instagram: "Instagram", google: "Google", facebook: "Facebook",
+  whatsapp: "WhatsApp", directo: "Directo", otro: "Otro",
+  movil: "Móvil", tablet: "Tablet", escritorio: "Escritorio", desconocido: "Desconocido",
+};
+
+async function refreshVisitas() {
+  const bloques = ["visitasPorDia", "visitasPorFuente", "visitasPorDispositivo", "visitasPorPais"];
+  const { data, error } = await sb.rpc("resumen_visitas");
+  if (error || !data) {
+    $("visitasHoy").textContent = "—";
+    $("visitas30").textContent = "—";
+    const msg = `<p class="admin-empty">No se pudieron cargar las visitas${error ? ": " + esc(error.message) : ""}.</p>`;
+    bloques.forEach((id) => { $(id).innerHTML = msg; });
+    return;
+  }
+
+  const r = data;
+  $("visitasHoy").textContent = String(r.total_hoy || 0);
+  $("visitas30").textContent = String(r.total_30d || 0);
+
+  const vacio = '<p class="admin-empty">Aún no hay visitas registradas.</p>';
+  const sinVisitas = !r.total_30d;
+  const lista = (arr, campo) => (arr && arr.length)
+    ? arr.map((x) => `<div class="admin-row"><div class="admin-row-main"><strong>${esc(VISITAS_ETIQUETAS[x[campo]] || x[campo])}</strong></div><div class="admin-mono">${x.n} visita${x.n === 1 ? "" : "s"}</div></div>`).join("")
+    : vacio;
+
+  $("visitasPorDia").innerHTML = sinVisitas ? vacio : (r.por_dia || [])
+    .map((x) => {
+      const f = new Date(x.fecha + "T00:00:00").toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" });
+      return `<div class="admin-row"><div class="admin-row-main"><strong>${esc(f)}</strong></div><div class="admin-mono">${x.n}</div></div>`;
+    }).join("");
+  $("visitasPorFuente").innerHTML = sinVisitas ? vacio : lista(r.por_fuente, "fuente");
+  $("visitasPorDispositivo").innerHTML = sinVisitas ? vacio : lista(r.por_dispositivo, "dispositivo");
+  $("visitasPorPais").innerHTML = sinVisitas ? vacio : lista(r.por_pais, "pais");
 }
 
 /* ---------- textos del sitio (Fase 5) ---------- */

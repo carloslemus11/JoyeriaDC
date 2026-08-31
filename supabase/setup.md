@@ -13,8 +13,14 @@ Aplicado el 2026-08-31 vía migraciones:
 | `fase1_rls_politicas` | Activa RLS + políticas + `is_admin()` (`policies.sql`) |
 | `fase1_storage_piezas` | Crea el bucket `piezas` + políticas de Storage (`storage.sql`) |
 | `fase1_is_admin_a_schema_privado` | Mueve `is_admin()` al schema `private` (cierra un aviso de seguridad) |
+| `reparar_perfiles` (2026-08-31) | Recrea `public.perfiles` (se había perdido) y reasigna admin |
+| `retirar_resenas` (2026-08-31) | Elimina `resumen_calificaciones()`; la tabla `calificaciones` ya no existe |
+| `visitas_v2` (2026-08-31) | Redefine `public.visitas` (manejo de tráfico) + `resumen_visitas()` |
 
-Si algún día se recrea el proyecto desde cero, correr en el SQL Editor y en este orden: `schema.sql` → `policies.sql` → `storage.sql`.
+Si algún día se recrea el proyecto desde cero, correr en el SQL Editor y en este orden: `schema.sql` → `policies.sql` → `storage.sql` → `funciones.sql`.
+
+> **Retirado (2026-08-31):** Fase 3 (calificaciones por estrellas) y Fase 6 (cuentas
+> de cliente + favoritos). Ya no existen las tablas `calificaciones` ni `favoritos`.
 
 Advisors de seguridad tras aplicar: **sin hallazgos**.
 
@@ -32,7 +38,12 @@ protection"* (chequea contra HaveIBeenPwned). Es un aviso de seguridad de Supaba
 - Deja **Email** habilitado.
 - **Desactiva "Allow new users to sign up"** (o "Enable sign-ups").
   Así nadie puede auto-registrarse: los admin se crean a mano.
+  > Se había **activado** en la Fase 6 (cuentas de cliente). Con Fase 6 retirada,
+  > **hay que volver a desactivarlo** — a hoy sigue activo.
 - Opcional: desactiva "Confirm email" para el admin, o confírmalo manualmente en el paso 2.2.
+
+### 2.4 Site URL (para el sitio en producción)
+**Authentication → URL Configuration → Site URL:** `https://joyeriadc.netlify.app`
 
 ### 2.2 Crear el usuario administrador
 **Authentication → Users → Add user → Create new user**:
@@ -71,8 +82,17 @@ Desde el SQL Editor, simulando un visitante anónimo:
 
 ```sql
 set local role anon;
-select count(*) from public.piezas;        -- debe funcionar (0 filas)
-insert into public.calificaciones (estrellas) values (5);   -- debe funcionar
-select * from public.cotizaciones;         -- debe devolver 0 filas (no error): anon no ve cotizaciones
+select count(*) from public.piezas;        -- debe funcionar (9 filas activas)
+insert into public.visitas (path, fuente, dispositivo)
+  values ('/', 'directo', 'escritorio');   -- debe funcionar
+select * from public.visitas;              -- 0 filas (no error): anon no ve visitas
+select * from public.cotizaciones;         -- 0 filas (no error): anon no ve cotizaciones
 reset role;
 ```
+
+## 5. Manejo de visitas (país aproximado)
+
+El código de país lo aporta una **Netlify Edge Function** (`netlify/edge-functions/geo-pais.js`)
+que inyecta `<meta name="dc-pais">` en la portada. **Al re-desplegar el sitio hay que
+incluir la carpeta `netlify/edge-functions/`** o el país deja de registrarse (las visitas
+igual se cuentan, con país "Desconocido"). Conectar el repo a Netlify evita este riesgo.

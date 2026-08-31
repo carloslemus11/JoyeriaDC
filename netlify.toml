@@ -7,6 +7,17 @@
 
 # El sitio sirve https://<sitio>/admin/ desde admin/index.html automáticamente.
 
+# Edge Function: agrega <meta name="dc-pais"> con el país aproximado del visitante
+# (lo lee assets/interacciones.js para el registro de visitas). El archivo vive en
+# netlify/edge-functions/geo-pais.js — hay que incluir esa carpeta al desplegar.
+[[edge_functions]]
+  path = "/"
+  function = "geo-pais"
+
+[[edge_functions]]
+  path = "/index.html"
+  function = "geo-pais"
+
 [[headers]]
   for = "/*"
   [headers.values]

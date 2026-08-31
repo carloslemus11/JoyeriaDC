@@ -14,7 +14,6 @@
     --rose:#DDB1A5;
     --btn-fill-bg:#4A362E;
     --btn-fill-fg:#F6E8DC;
-    --star-off:rgba(74,54,46,.18);
     --silk-hi:rgba(255,255,255,.5);
     --silk-sheen:rgba(255,255,255,.85);
     --silk-blush:rgba(224,153,142,.14);
@@ -48,7 +47,6 @@
       --rose:#C9948A;
       --btn-fill-bg:#E4BA8C;
       --btn-fill-fg:#2C201C;
-      --star-off:rgba(245,229,217,.18);
       --silk-hi:rgba(255,236,220,.08);
       --silk-sheen:rgba(255,236,220,.16);
       --silk-blush:rgba(150,80,70,.12);
@@ -72,7 +70,6 @@
     --rose:#C9948A;
     --btn-fill-bg:#E4BA8C;
     --btn-fill-fg:#2C201C;
-    --star-off:rgba(245,229,217,.18);
     --silk-hi:rgba(255,236,220,.08);
     --silk-sheen:rgba(255,236,220,.16);
     --silk-blush:rgba(150,80,70,.12);
@@ -331,51 +328,6 @@
   .story h3{font-size:clamp(24px,3vw,32px); margin-top:10px; font-weight:450;}
   .story p{margin-top:16px; color:var(--ink-soft); max-width:48ch;}
 
-  /* ---------- reviews / rating ---------- */
-  #resenas{
-    position:relative;
-    background-color:var(--surface);
-    background-image:
-      linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
-      var(--photo-ivory);
-    background-size:cover, cover;
-    background-position:center, 50% 45%;
-    background-repeat:no-repeat, no-repeat;
-  }
-  @media (max-width:720px){ #resenas{background-position:center, 50% 30%;} }
-  .rating-panel{
-    display:grid; grid-template-columns:.9fr 1.1fr; gap:0; border:1px solid var(--border);
-  }
-  @media (max-width:860px){ .rating-panel{grid-template-columns:1fr;} }
-  .rating-summary{
-    padding:52px 44px; display:flex; flex-direction:column; justify-content:center; gap:10px;
-    background-color:var(--bg-alt);
-    background-image:
-      linear-gradient(128deg, transparent 12%, var(--silk-sheen) 30%, transparent 48%),
-      linear-gradient(128deg, transparent 58%, var(--silk-sheen) 74%, transparent 92%),
-      radial-gradient(130% 80% at 10% -20%, var(--silk-hi), transparent 55%),
-      radial-gradient(75% 65% at 50% 45%, var(--silk-blush), transparent 68%),
-      linear-gradient(160deg, var(--bg-alt) 0%, var(--bg) 100%);
-  }
-  .avg-score{font-family:var(--font-display); font-size:64px; font-weight:450; line-height:1;}
-  .avg-stars{display:flex; gap:4px;}
-  .avg-stars svg{width:20px; height:20px;}
-  .rating-count{color:var(--muted); font-size:13.5px; font-family:var(--font-mono);}
-  .rating-input{padding:52px 44px; display:flex; flex-direction:column; gap:20px; justify-content:center;}
-  .rating-input p.lede{font-size:15.5px;}
-  .stars-input{display:flex; gap:10px;}
-  .star-btn{
-    background:none; border:none; cursor:pointer; padding:4px; color:var(--star-off);
-    transition:color .15s ease, transform .15s ease;
-  }
-  .star-btn svg{width:34px; height:34px;}
-  .star-btn:hover, .star-btn:hover ~ .star-btn{color:var(--star-off);}
-  .stars-input:hover .star-btn{color:var(--star-off);}
-  .stars-input .star-btn:hover{transform:scale(1.08);}
-  .star-btn.is-on{color:var(--gold);}
-  .rating-thanks{font-size:14px; color:var(--gold); font-weight:600;}
-  .rating-thanks[hidden]{display:none;}
-
   /* ---------- suggestions ---------- */
   .sugg-panel{display:grid; grid-template-columns:1fr 1fr; gap:56px;}
   @media (max-width:860px){ .sugg-panel{grid-template-columns:1fr;} }
@@ -473,55 +425,8 @@
   .fab svg{width:26px; height:26px;}
   .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
 
-  /* ===== Fase 6: cuentas + favoritos, y modales genéricos ===== */
+  /* ===== galería: un <a> transparente cubre toda la celda ===== */
   .nav-right{display:flex; align-items:center; gap:8px;}
-  .nav-cuenta{white-space:nowrap;}
-
-  /* galería: el <a> cubre la celda; el corazón va por encima */
   .gallery-item{position:relative; display:block; aspect-ratio:1/1; overflow:hidden; background:var(--bg-alt);}
   .gallery-link{position:absolute; inset:0; z-index:1; text-decoration:none;}
   .gallery-item .gallery-tag{z-index:2;}
-  .fav-heart{
-    position:absolute; top:8px; right:8px; z-index:3;
-    width:34px; height:34px; border-radius:50%; border:none; cursor:pointer;
-    background:rgba(0,0,0,.42); color:#fff; display:flex; align-items:center; justify-content:center;
-    -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); transition:transform .15s ease, background .15s ease;
-  }
-  .fav-heart svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2;}
-  .fav-heart:hover{transform:scale(1.1);}
-  .fav-heart.is-on{background:var(--gold-strong); color:#fff;}
-  .fav-heart.is-on svg{fill:currentColor;}
-
-  .dc-modal{
-    position:fixed; inset:0; z-index:200; display:flex; align-items:flex-start; justify-content:center;
-    padding:44px 16px; background:rgba(44,32,28,.55); overflow-y:auto;
-  }
-  .dc-modal[hidden]{display:none;}
-  .dc-modal-box{
-    position:relative; width:100%; max-width:420px;
-    background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:26px;
-    box-shadow:0 30px 80px -30px rgba(0,0,0,.5);
-  }
-  .dc-modal-x{position:absolute; top:12px; right:14px; background:none; border:none; font-size:1.5rem; line-height:1; color:var(--muted); cursor:pointer;}
-  .dc-modal-title{font-family:var(--font-display); font-weight:600; color:var(--ink); margin:0 0 16px; font-size:1.2rem;}
-  .dc-tabs{display:flex; gap:6px; margin-bottom:16px;}
-  .dc-tab{flex:1; font:inherit; font-size:.9rem; padding:8px; border-radius:999px; border:1px solid var(--border); background:none; color:var(--ink-soft); cursor:pointer;}
-  .dc-tab.is-active{background:var(--ink); color:var(--bg); border-color:var(--ink);}
-  .dc-form{display:flex; flex-direction:column; gap:12px;}
-  .dc-field{display:flex; flex-direction:column; gap:5px;}
-  .dc-field span{font-size:.8rem; font-weight:600; color:var(--ink);}
-  .dc-field input{font:inherit; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--ink);}
-  .dc-form .btn, #cuentaAuth .btn{width:100%; justify-content:center;}
-  #cuentaAuth{display:flex; flex-direction:column; gap:10px;}
-  .dc-hola{color:var(--ink); font-size:1rem; margin:0 0 4px;}
-  .dc-msg{font-size:.85rem; margin:0;}
-  .dc-nota{margin-top:14px; font-size:.8rem; color:var(--muted); line-height:1.5;}
-
-  .fav-list{display:flex; flex-direction:column; gap:10px; margin-bottom:16px;}
-  .fav-row{display:flex; align-items:center; gap:12px;}
-  .fav-thumb{width:48px; height:48px; border-radius:10px; overflow:hidden; background:var(--bg-alt); flex:none;}
-  .fav-thumb img{width:100%; height:100%; object-fit:cover;}
-  .fav-name{flex:1; color:var(--ink); font-size:.95rem;}
-  .fav-quitar{font:inherit; font-size:.8rem; background:none; border:1px solid var(--border); border-radius:999px; padding:5px 12px; color:var(--muted); cursor:pointer;}
-  .fav-empty{color:var(--muted); font-size:.9rem;}
-  #favCotizar{width:100%; justify-content:center; white-space:normal;}

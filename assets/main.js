@@ -2,14 +2,9 @@
 import { healthcheck } from "./supabase-client.js";
 import { getCategorias, getPiezas, fotoUrl } from "./catalogo.js";
 import {
-  getResumenCalificaciones, enviarCalificacion,
-  getSugerenciasAprobadas, enviarSugerencia, registrarCotizacion,
+  getSugerenciasAprobadas, enviarSugerencia, registrarCotizacion, registrarVisita,
 } from "./interacciones.js";
 import { getContenido, aplicarContenido } from "./contenido.js";
-import {
-  sesionActual, onCambioSesion, registrarse, iniciarSesion, cerrarSesion,
-  getFavoritos, getFavoritoIds, agregarFavorito, quitarFavorito,
-} from "./cuenta.js";
 
 healthcheck();
 
@@ -120,14 +115,6 @@ function renderPiezas(grid, piezas) {
     });
     cell.appendChild(link);
 
-    var heart = el("button", {
-      class: "fav-heart", type: "button",
-      "aria-label": "Guardar " + pieza.nombre + " en favoritos",
-      "data-pieza-id": pieza.id
-    });
-    heart.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 8.5 2.5 5 6 5c2 0 3.4 1.2 4 2.3C10.6 6.2 12 5 14 5c3.5 0 5 3.5 3.5 7-2.5 4.5-9.5 9-9.5 9z"/></svg>';
-    cell.appendChild(heart);
-
     var tag = el("span", { class: "gallery-tag" });
     tag.textContent = pieza.nombre;
     cell.appendChild(tag);
@@ -136,7 +123,6 @@ function renderPiezas(grid, piezas) {
   });
   grid.removeAttribute("data-estado");
   wireWaLinks(grid);
-  if (window.__dcMarcarFavoritos) window.__dcMarcarFavoritos();
 }
 
 function renderCatalogoError(catGrid, galleryGrid) {
@@ -225,10 +211,9 @@ function initSitio() {
   document.getElementById("year").textContent = new Date().getFullYear();
 
   cargarContenido();
-  initRatings();
   initSuggestions();
   cargarCatalogo();
-  initCuenta();
+  registrarVisita();
 }
 
 async function cargarContenido() {
@@ -239,88 +224,9 @@ async function cargarContenido() {
   }
 }
 
-var STAR_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg>';
-
 function fmtFecha(iso) {
   var d = iso ? new Date(iso) : new Date();
   return d.toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" });
-}
-
-/* ---------- calificaciones (Supabase) ---------- */
-function initRatings() {
-  var avgScore = document.getElementById("avgScore");
-  var avgStars = document.getElementById("avgStars");
-  var ratingCount = document.getElementById("ratingCount");
-  var starButtons = Array.prototype.slice.call(document.querySelectorAll("#starsInput .star-btn"));
-  var ratingThanks = document.getElementById("ratingThanks");
-  var ratingError = document.getElementById("ratingError");
-  if (!avgStars || !starButtons.length) return;
-
-  function renderAvgStars(avg) {
-    avgStars.innerHTML = "";
-    for (var i = 1; i <= 5; i++) {
-      var span = document.createElement("span");
-      span.style.color = i <= Math.round(avg || 0) ? "var(--gold)" : "var(--star-off)";
-      span.style.width = "20px"; span.style.height = "20px"; span.style.display = "inline-flex";
-      span.innerHTML = STAR_SVG;
-      avgStars.appendChild(span);
-    }
-  }
-  function pintarResumen(promedio, total) {
-    if (!total) {
-      avgScore.textContent = "—";
-      ratingCount.textContent = "Sé el primero en calificar";
-      renderAvgStars(0);
-      return;
-    }
-    avgScore.textContent = Number(promedio).toFixed(1);
-    ratingCount.textContent = total === 1 ? "1 reseña" : (total + " reseñas");
-    renderAvgStars(promedio);
-  }
-  function paintStarButtons(value) {
-    starButtons.forEach(function (btn) {
-      var on = parseInt(btn.getAttribute("data-value"), 10) <= value;
-      btn.classList.toggle("is-on", on);
-      btn.setAttribute("aria-checked", on ? "true" : "false");
-    });
-  }
-  async function refrescarResumen() {
-    try {
-      var r = await getResumenCalificaciones();
-      pintarResumen(r.promedio, r.total);
-    } catch (e) {
-      console.warn("[Joyería DC] resumen de calificaciones:", e && e.message);
-      pintarResumen(null, 0);
-    }
-  }
-
-  var yaCalifico = false;
-  try { yaCalifico = localStorage.getItem("dc_rated") === "1"; } catch (e) {}
-  if (yaCalifico && ratingThanks) ratingThanks.hidden = false;
-
-  starButtons.forEach(function (btn) {
-    btn.addEventListener("click", async function () {
-      var value = parseInt(btn.getAttribute("data-value"), 10);
-      if (ratingError) ratingError.hidden = true;
-      paintStarButtons(value);
-      if (yaCalifico) { if (ratingThanks) ratingThanks.hidden = false; return; }
-      starButtons.forEach(function (b) { b.disabled = true; });
-      try {
-        await enviarCalificacion(value);
-        yaCalifico = true;
-        try { localStorage.setItem("dc_rated", "1"); } catch (e) {}
-        if (ratingThanks) ratingThanks.hidden = false;
-        await refrescarResumen();
-      } catch (e) {
-        console.warn("[Joyería DC] enviar calificación:", e && e.message);
-        if (ratingError) ratingError.hidden = false;
-        paintStarButtons(0);
-        starButtons.forEach(function (b) { b.disabled = false; });
-      }
-    });
-  });
-
-  refrescarResumen();
 }
 
 /* ---------- sugerencias (Supabase, con moderación previa) ---------- */
@@ -379,184 +285,6 @@ function initSuggestions() {
   });
 
   cargarLista();
-}
-
-/* ---------- cuentas de cliente + favoritos (Fase 6) ---------- */
-function initCuenta() {
-  var btn = document.getElementById("cuentaBtn");
-  var modal = document.getElementById("cuentaModal");
-  var favModal = document.getElementById("favModal");
-  if (!btn || !modal) return;
-
-  var anonView = document.getElementById("cuentaAnon");
-  var authView = document.getElementById("cuentaAuth");
-  var form = document.getElementById("cuentaForm");
-  var emailEl = document.getElementById("ctaEmail");
-  var passEl = document.getElementById("ctaPass");
-  var submitBtn = document.getElementById("ctaSubmit");
-  var msgEl = document.getElementById("ctaMsg");
-  var whoEl = document.getElementById("ctaWho");
-  var modo = "entrar";
-  var favIds = new Set();
-
-  function abrir(m) { m.hidden = false; }
-  function cerrar(m) { m.hidden = true; }
-  function msg(text, kind) {
-    if (!text) { msgEl.hidden = true; return; }
-    msgEl.textContent = text;
-    msgEl.style.color = kind === "ok" ? "var(--gold-strong)" : "#B3261E";
-    msgEl.hidden = false;
-  }
-
-  document.querySelectorAll("[data-cerrar]").forEach(function (x) {
-    x.addEventListener("click", function () { cerrar(modal); cerrar(favModal); });
-  });
-  [modal, favModal].forEach(function (m) {
-    m.addEventListener("click", function (e) { if (e.target === m) cerrar(m); });
-  });
-
-  document.querySelectorAll(".dc-tab").forEach(function (t) {
-    t.addEventListener("click", function () {
-      modo = t.getAttribute("data-modo");
-      document.querySelectorAll(".dc-tab").forEach(function (x) { x.classList.toggle("is-active", x === t); });
-      submitBtn.textContent = modo === "crear" ? "Crear cuenta" : "Entrar";
-      passEl.setAttribute("autocomplete", modo === "crear" ? "new-password" : "current-password");
-      msg(null);
-    });
-  });
-
-  async function pintarSesion(session) {
-    var hay = !!session;
-    anonView.hidden = hay;
-    authView.hidden = !hay;
-    btn.textContent = hay ? "Mi cuenta" : "Cuenta";
-    if (hay) {
-      whoEl.textContent = session.user.email || "";
-      try { favIds = await getFavoritoIds(); } catch (e) { favIds = new Set(); }
-    } else {
-      favIds = new Set();
-    }
-    marcarFavoritos();
-  }
-
-  function marcarFavoritos() {
-    document.querySelectorAll(".fav-heart").forEach(function (h) {
-      h.classList.toggle("is-on", favIds.has(h.getAttribute("data-pieza-id")));
-    });
-  }
-  window.__dcMarcarFavoritos = marcarFavoritos;
-
-  btn.addEventListener("click", async function () {
-    msg(null);
-    await pintarSesion(await sesionActual());
-    abrir(modal);
-  });
-
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    msg(null);
-    submitBtn.disabled = true;
-    var email = emailEl.value.trim();
-    var pass = passEl.value;
-    try {
-      if (modo === "crear") {
-        var r = await registrarse(email, pass);
-        if (r.necesitaConfirmar) {
-          msg("Cuenta creada. Revisa tu correo para confirmarla y luego entra.", "ok");
-          submitBtn.disabled = false;
-          return;
-        }
-      } else {
-        await iniciarSesion(email, pass);
-      }
-      form.reset();
-      await pintarSesion(await sesionActual());
-    } catch (err) {
-      var m = (err && err.message) || "";
-      if (/already registered/i.test(m)) msg("Ese correo ya tiene cuenta. Entra con tu contraseña.");
-      else if (/Invalid login/i.test(m)) msg("Correo o contraseña incorrectos.");
-      else if (/should be at least|password.*6/i.test(m)) msg("La contraseña debe tener al menos 6 caracteres.");
-      else if (/signups? not allowed|signup_disabled/i.test(m)) msg("El registro de cuentas está deshabilitado en este momento.");
-      else if (/Email not confirmed/i.test(m)) msg("Confirma tu correo antes de entrar (revisa tu bandeja).");
-      else msg("No se pudo completar. Intenta de nuevo.");
-      submitBtn.disabled = false;
-      return;
-    }
-    submitBtn.disabled = false;
-  });
-
-  document.getElementById("ctaLogout").addEventListener("click", async function () {
-    await cerrarSesion();
-    await pintarSesion(null);
-  });
-
-  document.getElementById("verFavsBtn").addEventListener("click", async function () {
-    cerrar(modal);
-    await renderFavoritos();
-    abrir(favModal);
-  });
-
-  async function renderFavoritos() {
-    var list = document.getElementById("favList");
-    var empty = document.getElementById("favEmpty");
-    var cta = document.getElementById("favCotizar");
-    list.innerHTML = "";
-    var items = [];
-    try { items = await getFavoritos(); } catch (e) { /* nada */ }
-    empty.hidden = items.length > 0;
-    cta.hidden = items.length === 0;
-    items.forEach(function (p) {
-      var row = document.createElement("div");
-      row.className = "fav-row";
-      var src = p.foto ? fotoUrl(p.foto.storage_path) : "";
-      row.innerHTML =
-        '<div class="fav-thumb">' + (src ? '<img src="' + src + '" alt="">' : "") + "</div>" +
-        '<span class="fav-name"></span>' +
-        '<button class="fav-quitar" type="button" aria-label="Quitar">Quitar</button>';
-      row.querySelector(".fav-name").textContent = p.nombre;
-      row.querySelector(".fav-quitar").addEventListener("click", async function () {
-        try {
-          await quitarFavorito(p.id);
-          favIds.delete(p.id);
-          marcarFavoritos();
-          await renderFavoritos();
-        } catch (e) { /* nada */ }
-      });
-      list.appendChild(row);
-    });
-    if (items.length) {
-      var nombres = items.map(function (p) { return "• " + p.nombre; }).join("\n");
-      cta.setAttribute("data-wa-msg", "Hola, me interesan estas piezas de Joyería DC:\n" + nombres);
-      cta.setAttribute("href", waHref(cta.getAttribute("data-wa-msg")));
-    }
-  }
-
-  // clic en un corazón (delegado)
-  document.addEventListener("click", async function (e) {
-    var heart = e.target && e.target.closest ? e.target.closest(".fav-heart") : null;
-    if (!heart) return;
-    e.preventDefault();
-    var piezaId = heart.getAttribute("data-pieza-id");
-    var session = await sesionActual();
-    if (!session) { await pintarSesion(null); abrir(modal); return; }
-    heart.disabled = true;
-    try {
-      if (favIds.has(piezaId)) {
-        await quitarFavorito(piezaId);
-        favIds.delete(piezaId);
-      } else {
-        await agregarFavorito(piezaId);
-        favIds.add(piezaId);
-      }
-      marcarFavoritos();
-    } catch (err) {
-      console.warn("[Joyería DC] favorito:", err && err.message);
-    }
-    heart.disabled = false;
-  });
-
-  onCambioSesion(function (session) { pintarSesion(session); });
-  sesionActual().then(pintarSesion);
 }
 
 if (document.readyState === "loading") {
