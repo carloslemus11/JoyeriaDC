@@ -191,7 +191,34 @@ function openModal(title, fieldsHtml, onSubmit) {
   };
   $("modal").hidden = false;
 }
-function closeModal() { $("modal").hidden = true; $("modalForm").innerHTML = ""; }
+let modalCloseCb = null;
+function closeModal() {
+  $("modal").hidden = true;
+  $("modalForm").innerHTML = "";
+  const cb = modalCloseCb; modalCloseCb = null;
+  if (cb) cb();
+}
+
+/* Confirmación in-app (window.confirm no es fiable en todos los navegadores). */
+function confirmar(mensaje, { danger = false, ok = "Sí, continuar" } = {}) {
+  return new Promise((resolve) => {
+    $("modalTitle").textContent = "Confirmar";
+    const form = $("modalForm");
+    form.onsubmit = null;
+    form.innerHTML = `
+      <p class="admin-note">${esc(mensaje)}</p>
+      <div class="admin-form-actions">
+        <button type="button" class="btn btn-ghost btn-sm" data-no>Cancelar</button>
+        <button type="button" class="btn ${danger ? "btn-ghost is-danger" : "btn-fill"} btn-sm" data-yes>${esc(ok)}</button>
+      </div>`;
+    let settled = false;
+    const done = (v) => { if (settled) return; settled = true; modalCloseCb = null; closeModal(); resolve(v); };
+    modalCloseCb = () => { if (!settled) { settled = true; resolve(false); } };
+    form.querySelector("[data-no]").addEventListener("click", () => done(false));
+    form.querySelector("[data-yes]").addEventListener("click", () => done(true));
+    $("modal").hidden = false;
+  });
+}
 
 function field(label, name, value, opts = {}) {
   const v = value == null ? "" : String(value);
@@ -307,13 +334,13 @@ async function toggleActiva(tabla, row) {
   tabla === "piezas" ? refreshPiezas() : refreshCategorias();
 }
 async function borrarCategoria(c) {
-  if (!confirm(`Borrar la categoría « ${c.nombre} ». Es permanente. Las piezas quedan sin categoría, no se borran.`)) return;
+  if (!(await confirmar(`Borrar la categoría « ${c.nombre} ». Es permanente. Las piezas quedan sin categoría, no se borran.`, { danger: true, ok: "Borrar" }))) return;
   const { error } = await sb.from("categorias").delete().eq("id", c.id);
   if (error) { toast("No se pudo borrar: " + error.message, "err"); return; }
   toast("Categoría borrada."); refreshCategorias(); refreshPiezas();
 }
 async function borrarPieza(p) {
-  if (!confirm(`Borrar la pieza « ${p.nombre} ». Es permanente (no hay papelera). Considera desactivarla en su lugar.`)) return;
+  if (!(await confirmar(`Borrar la pieza « ${p.nombre} ». Es permanente (no hay papelera). Considera desactivarla en su lugar.`, { danger: true, ok: "Borrar" }))) return;
   const { error } = await sb.from("piezas").delete().eq("id", p.id);
   if (error) { toast("No se pudo borrar: " + error.message, "err"); return; }
   toast("Pieza borrada."); refreshPiezas();
@@ -330,7 +357,7 @@ async function checkBucketVacio() {
 }
 
 async function importarFotosIniciales() {
-  if (!confirm("Subir las fotos del catálogo actual a Storage. Se hace una sola vez.")) return;
+  if (!(await confirmar("Subir las fotos del catálogo actual a Storage. Se hace una sola vez.", { ok: "Importar" }))) return;
   const btn = $("importFotosBtn");
   btn.disabled = true; btn.textContent = "Importando…";
   const { data: rows, error } = await sb.from("pieza_fotos").select("id, storage_path").like("storage_path", "assets/piezas/%");
