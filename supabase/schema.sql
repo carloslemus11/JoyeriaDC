@@ -88,7 +88,7 @@ create index cotizaciones_pieza_idx on public.cotizaciones(pieza_id);
 
 -- piezas.updated_at se mantiene solo (migración fase2_piezas_updated_at)
 create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = '' as $$
 begin
   new.updated_at = now();
   return new;

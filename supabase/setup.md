@@ -23,6 +23,10 @@ Advisors de seguridad tras aplicar: **sin hallazgos**.
 Estos pasos no se pueden hacer por API; hay que entrar a
 `https://supabase.com/dashboard/project/ardfyksmwwwignoejaft`.
 
+### 2.0 (Opcional, recomendado) Protección de contraseñas filtradas
+**Authentication → Policies / Password security**: activa *"Leaked password
+protection"* (chequea contra HaveIBeenPwned). Es un aviso de seguridad de Supabase.
+
 ### 2.1 Deshabilitar el registro público
 **Authentication → Sign In / Providers → Email** (o **Authentication → Settings**):
 - Deja **Email** habilitado.
