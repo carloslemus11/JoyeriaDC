@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joyería DC · Panel</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;1,9..144,400&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/styles.css">
+<link rel="stylesheet" href="admin.css">
+<script src="../assets/config.js"></script>
+</head>
+<body class="silk admin-body">
+
+  <main class="admin-shell">
+
+    <!-- Login -->
+    <section id="loginView" class="admin-card" hidden>
+      <p class="admin-eyebrow">Joyería DC</p>
+      <h1 class="admin-title">Panel de administración</h1>
+      <form id="loginForm" class="admin-form" autocomplete="on">
+        <label class="admin-field">
+          <span>Correo</span>
+          <input type="email" id="email" name="email" required autocomplete="username">
+        </label>
+        <label class="admin-field">
+          <span>Contraseña</span>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </label>
+        <button type="submit" id="loginBtn" class="btn btn-fill">Entrar</button>
+        <p id="loginError" class="admin-error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <!-- Panel (placeholder Fase 1) -->
+    <section id="panelView" class="admin-card" hidden>
+      <p class="admin-eyebrow">Sesión iniciada</p>
+      <h1 class="admin-title">Panel en construcción</h1>
+      <p class="admin-note">
+        La administración del catálogo, sugerencias, cotizaciones y textos
+        llega en las siguientes fases de la migración. Por ahora esto solo
+        confirma que el acceso funciona.
+      </p>
+      <p id="panelWho" class="admin-mono"></p>
+      <button type="button" id="logoutBtn" class="btn btn-ghost">Cerrar sesión</button>
+    </section>
+
+    <!-- Cargando -->
+    <section id="loadingView" class="admin-card">
+      <p class="admin-mono">Cargando…</p>
+    </section>
+
+  </main>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

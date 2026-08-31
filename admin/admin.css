@@ -1,0 +1,87 @@
+/* Joyería DC — panel /admin (Fase 1: solo login + placeholder) */
+
+.admin-body{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+.admin-shell{
+  width:100%;
+  max-width:420px;
+}
+
+.admin-card{
+  background:var(--surface-glass, rgba(255,255,255,.72));
+  -webkit-backdrop-filter:blur(20px);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--hair, rgba(74,54,46,.14));
+  border-radius:22px;
+  padding:32px 28px;
+  box-shadow:0 24px 60px -30px rgba(74,54,46,.4);
+}
+
+.admin-eyebrow{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:.72rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--gold-strong, #9C7548);
+  margin:0 0 6px;
+}
+
+.admin-title{
+  font-family:"Fraunces", Georgia, serif;
+  font-weight:600;
+  font-size:1.7rem;
+  line-height:1.15;
+  color:var(--ink, #4A362E);
+  margin:0 0 18px;
+}
+
+.admin-form{ display:flex; flex-direction:column; gap:14px; }
+
+.admin-field{ display:flex; flex-direction:column; gap:6px; }
+.admin-field span{
+  font-size:.8rem;
+  font-weight:600;
+  color:var(--ink, #4A362E);
+}
+.admin-field input{
+  font:inherit;
+  padding:11px 13px;
+  border-radius:12px;
+  border:1px solid var(--hair, rgba(74,54,46,.22));
+  background:var(--bg, #F7EAE2);
+  color:var(--ink, #4A362E);
+}
+.admin-field input:focus{
+  outline:2px solid var(--gold, #BC9268);
+  outline-offset:1px;
+}
+
+.admin-error{
+  margin:2px 0 0;
+  font-size:.85rem;
+  color:#B3261E;
+}
+
+.admin-note{
+  font-size:.95rem;
+  line-height:1.5;
+  color:var(--ink, #4A362E);
+  margin:0 0 14px;
+}
+
+.admin-mono{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:.8rem;
+  color:var(--ink-soft, rgba(74,54,46,.7));
+  margin:0 0 18px;
+  word-break:break-all;
+}
+
+.admin-card .btn{ width:100%; justify-content:center; }
+.admin-card #logoutBtn{ margin-top:4px; }

@@ -2,15 +2,32 @@
 
 Sitio de una sola página para **Joyería DC**, joyería de oro 18K en Ibagué, Colombia. Instagram: [@joyeriadc__](https://www.instagram.com/joyeriadc__/). Local físico: C.C. Los Panches, local 53, Ibagué. WhatsApp de contacto/ventas: **+1 240 593 3943** (usado en el sitio como `wa.me/12405933943`).
 
-No es un repositorio git. No hay backend ni build step: es un único archivo HTML autocontenido.
+Es un repositorio git (`main`). No hay build step. Desde la **Fase 1 de la migración a Supabase** (2026-08-31) el sitio dejó de ser un único archivo autocontenido y de publicarse como Claude Artifact: ahora es un sitio estático multi-archivo con backend en **Supabase** (Postgres + Auth + Storage), pensado para publicarse en **Netlify**. Ver `docs/specs/2026-08-31-migracion-supabase.md` y `docs/plans/2026-08-31-migracion-supabase.md`.
 
 ## Estructura de carpetas
 
 ```
 JOYERIA.DC./
-├── index.html                          # El sitio completo: HTML + CSS + JS + imágenes, todo en un solo archivo
+├── index.html                          # Sitio público (solo el marcado; CSS y JS ahora en assets/)
+├── 404.html
+├── README.md                           # Cómo correr local, configurar Supabase y publicar en Netlify
+├── netlify.toml                        # Config de deploy (publish = ".", sin build, cabeceras)
 ├── CLAUDE.md                           # Este archivo
 ├── revision-final.md                   # Historial de auditorías (lo crea/actualiza el skill revision-final; no existe hasta la primera corrida)
+├── assets/
+│   ├── styles.css                      # Todo el CSS (incluye las texturas de seda en base64)
+│   ├── main.js                         # JS del sitio público (módulo ES). Antes era el <script> inline
+│   ├── config.js                       # SUPABASE_URL + publishable key + WA_NUMBER (público por diseño, SÍ se versiona)
+│   └── supabase-client.js              # Cliente Supabase compartido (sitio + admin) + healthcheck
+├── admin/
+│   ├── index.html                      # Panel de administración (Fase 1: solo login + placeholder)
+│   ├── admin.css
+│   └── admin.js                        # Login por correo/contraseña + chequeo de rol admin en public.perfiles
+├── supabase/
+│   ├── schema.sql                      # Tablas (fuente de verdad del esquema; ya aplicado)
+│   ├── policies.sql                    # RLS + políticas + private.is_admin() (ya aplicado)
+│   ├── storage.sql                     # Bucket "piezas" + políticas de Storage (ya aplicado)
+│   └── setup.md                        # Pasos de configuración; incluye los pendientes de Auth
 ├── docs/
 │   ├── specs/                           # Specs de desarrollo (los crea/actualiza el skill design-spec; no existe hasta el primero)
 │   │   └── YYYY-MM-DD-titulo.md
@@ -18,7 +35,7 @@ JOYERIA.DC./
 │       └── YYYY-MM-DD-titulo.md
 ├── IMAGENES JOYAS/                      # Fotos reales de producto, copiadas al proyecto por el usuario (ver "Fuentes de las fotos")
 │   ├── Fotos originales por producto/   # Todas las tomas, organizadas en subcarpetas por pieza (9 piezas, varias fotos c/u)
-│   ├── Versiones para web/              # Recortes ya optimizados — de aquí salieron las 9 fotos embebidas en index.html
+│   ├── Versiones para web/              # Recortes ya optimizados — de aquí salieron las 9 fotos embebidas en index.html (pasan a Supabase Storage en la Fase 2)
 │   └── Texturas de seda/                # Fotos de tela de seda para fondos (ver "Textura de seda (fondo fotográfico)")
 │       ├── Originales/                  # JPG originales tal como los subió el usuario, sin procesar
 │       └── Versiones para web/          # WebP redimensionados/comprimidos — de aquí sale el fondo embebido en index.html
@@ -37,13 +54,34 @@ JOYERIA.DC./
             └── SKILL.md                 # Skill de prueba y cierre de un desarrollo (ver sección "Skills del proyecto")
 ```
 
-`index.html` es intencionalmente monolítico:
-- El `<style>` va inline en el `<head>`.
-- El `<script>` va inline al final del `<body>`.
-- Las fotos de producto están embebidas como `data:image/...;base64,...` directamente en los `<img src="...">`, no como archivos aparte. Esto es necesario porque el sitio se publica como Claude Artifact (que exige contenido autocontenido, sin dependencias externas salvo Google Fonts) y así también funciona el archivo si se abre suelto o se sube a cualquier hosting sin configuración adicional.
-- Por el base64 embebido, el archivo pesa ~940 KB y tiene líneas muy largas — es normal, no es un error.
+Sobre la estructura del sitio (post Fase 1):
+- El CSS vive en `assets/styles.css` (linkeado en el `<head>`), no inline. Sigue teniendo las texturas de seda en base64 — por eso pesa ~240 KB.
+- El JS vive en `assets/main.js`, cargado como **módulo ES** (`<script type="module">`). Es el mismo IIFE de antes más un `import` del cliente de Supabase y una llamada a `healthcheck()`.
+- Como `main.js`/`admin.js` son módulos, el sitio **debe servirse por HTTP** (server local o Netlify); ya no funciona abriendo el `.html` con `file://`.
+- Las 9 fotos de producto siguen embebidas como `data:image/...;base64,...` en los `<img>` de `index.html` (pasan a Supabase Storage en la Fase 2). Por eso `index.html` todavía pesa ~870 KB.
+- `assets/config.js` NO es secreto: la publishable key de Supabase es pública por diseño; la seguridad la dan las políticas RLS. Se versiona en git.
 
-El sitio también está publicado como Claude Artifact (link privado, compartible desde el menú del artifact). Cada vez que se edita `index.html`, hay que volver a publicarlo para que el link se actualice.
+**Ya no se publica como Claude Artifact.** Un Artifact no puede conectarse a Supabase (su CSP bloquea todo fetch externo). La forma de publicar ahora es Netlify — ver `README.md`. El Artifact anterior queda obsoleto.
+
+### Backend Supabase
+
+- Proyecto: `ardfyksmwwwignoejaft` — `https://ardfyksmwwwignoejaft.supabase.co`.
+- Esquema, RLS y Storage aplicados vía migraciones (`fase1_*`). Fuente de verdad en `supabase/*.sql`. Advisors de seguridad: sin hallazgos.
+- Tablas: `categorias`, `piezas`, `pieza_fotos`, `calificaciones`, `sugerencias`, `cotizaciones`, `contenido_sitio`, `perfiles`.
+- Regla RLS: el público (anon) solo lee catálogo/textos activos e inserta calificaciones/sugerencias/cotizaciones; todo lo demás exige sesión admin (`private.is_admin()` = tener fila en `public.perfiles` con `rol='admin'`).
+- Bucket de Storage `piezas` (público en lectura, escritura solo admin) para las fotos del catálogo.
+- **Pendiente manual en el dashboard de Supabase** (no se puede por API): desactivar el registro público de usuarios, crear el usuario admin y hacer `insert into public.perfiles`. Pasos en `supabase/setup.md`.
+
+### Estado de la migración por fases
+
+Plan completo en `docs/plans/2026-08-31-migracion-supabase.md`. Spec en `docs/specs/2026-08-31-migracion-supabase.md`.
+
+- **Fase 1 — Fundación:** EN CURSO. Hecho: esquema + RLS + Storage + git + reestructura a multi-archivo + `assets/config.js`/`supabase-client.js` + shell de `/admin` con login + `netlify.toml`. Falta: pasos de Auth en el dashboard, primer deploy a Netlify, verificación.
+- **Fase 2 — Catálogo + panel admin:** pendiente. Piezas/categorías/fotos a Supabase; CRUD en `/admin`.
+- **Fase 3 — Reseñas y sugerencias en base de datos:** pendiente. Hoy el widget de estrellas y el form de sugerencias siguen en su versión local (no persisten).
+- **Fase 4 — Registro de cotizaciones:** pendiente.
+- **Fase 5 — Textos editables del sitio:** pendiente (tabla `contenido_sitio` ya existe, vacía).
+- **Fase 6 — Cuentas de clientes:** condicional, se decide al cerrar la Fase 5.
 
 ## Modelo de negocio reflejado en el sitio
 
@@ -142,8 +180,8 @@ No existe un archivo de logo real (se buscó en Canva y en carpetas locales del 
 ## Funcionalidad / interactividad
 
 - **Botones de WhatsApp**: cualquier elemento con clase `wa-link` y atributo `data-wa-msg="..."` recibe automáticamente (vía JS al cargar) un `href` a `wa.me/12405933943?text=...` con ese mensaje. Así se arma cada botón de cotización/compra sin repetir el número a mano.
-- **Calificación de servicio**: 5 botones de estrella; al hacer clic, se agrega una entrada a una lista oculta (`#ratingLog`) y se recalcula el promedio mostrado. Estos datos están declarados como **Artifact capability (`capabilities: {artifact: {}}`)** — es un "documento vivo": las calificaciones y sugerencias reales de los visitantes quedan guardadas en el artifact publicado y persisten entre sesiones/visitantes, no son solo un efecto visual local. Los controles interactivos (botones de estrella, formulario) están dentro de `artifact-local` porque son UI transitoria por visitante; lo que sí se sincroniza es el registro resultante (`#ratingLog`, `#suggList`).
-- **Sugerencias**: formulario (nombre opcional + texto) que agrega entradas a una lista visible; misma lógica de "documento vivo".
+- **Calificación de servicio**: 5 botones de estrella; al hacer clic, se agrega una entrada a una lista oculta (`#ratingLog`) y se recalcula el promedio mostrado. **Estado actual (post Fase 1):** todavía funciona en su versión local en `assets/main.js` — NO persiste en ningún lado (antes usaba la Artifact capability, que se dejó de usar al salir de Artifact; la tabla `calificaciones` de Supabase ya existe pero aún no está conectada). Se conecta a Supabase en la **Fase 3**.
+- **Sugerencias**: formulario (nombre opcional + texto) que agrega entradas a una lista visible; misma situación que las calificaciones — versión local, sin persistir, se conecta a Supabase (`sugerencias`, con moderación previa) en la **Fase 3**.
 - **Scroll-reveal**: `IntersectionObserver` agrega la clase `.is-visible` a elementos `.reveal` cuando entran en pantalla.
 - **Nav**: se vuelve translúcida/blur al hacer scroll; menú hamburguesa en móvil con `aria-expanded`.
 
@@ -169,7 +207,7 @@ El usuario subió dos fotos de tela de seda (stock de Pexels, no de su negocio) 
 - **No inventar información del negocio** (precios, horarios, métodos de pago que no existen, testimonios falsos). Ante la duda, omitir el dato y preguntar, no rellenar.
 - Prefiere **fotos reales del negocio** sobre placeholders o gráficos genéricos — cuando pide "usa mis fotos", hay que buscar en sus fuentes reales (Canva, carpetas locales) antes de recurrir a SVG/CSS decorativo.
 - Da referencias visuales (capturas de pantalla, fotos de producto, resultados de búsqueda de sitios como Magnific) para dirección de diseño — hay que interpretarlas como guía de estilo, no asumir que hay que usar el archivo exacto si no está disponible/accesible.
-- Pide cambios de forma directa e iterativa; espera que cada cambio se publique/actualice el mismo artifact (no crear artifacts nuevos sueltos).
+- Pide cambios de forma directa e iterativa. (Antes cada cambio se republicaba como el mismo Claude Artifact; post Fase 1 el sitio se publica en Netlify — ver `README.md`.)
 - Prefiere que se valide el HTML (estructura balanceada, imágenes válidas) antes de publicar, dado que el archivo es demasiado grande para previsualizarlo cómodamente en el navegador de la herramienta.
 - Cuando pide "textura de fondo" para el sitio, prefiere **un solo tono/foto aplicado de forma consistente en toda la página** por sobre alternar varias fotos/colores distintos por sección — aunque el pedido inicial haya sido justo lo contrario (alternar). Pasó con la seda: primero se implementó alternando champán en el hero y marfil en el resto, y el usuario pidió después unificar todo con la marfil. Ante un nuevo cambio de fondo, mejor preguntar/confirmar en vez de asumir que "alternar" sigue siendo lo deseado.
 
@@ -210,9 +248,10 @@ El usuario subió dos fotos de tela de seda (stock de Pexels, no de su negocio) 
   - Compara el resultado contra el plan acordado en la conversación y/o el spec más reciente en `docs/specs/`.
   - **A diferencia de `brainstorming`/`design-spec`/`revision-final`, esta skill sí corrige** lo que falle, dentro del mismo ciclo — y si todo cumple, da luz verde y cierra.
   - Documenta la limitación conocida del navegador integrado (pestaña puede quedar "oculta" con capturas en blanco) y cómo recuperarse (cerrar/reabrir pestaña, scroll en pasos cortos, o caer a verificación por código si persiste).
-  - Recuerda republicar el Artifact si `index.html` cambió durante la corrección.
+  - Recuerda volver a desplegar en Netlify si el sitio cambió durante la corrección (antes era "republicar el Artifact").
   - Se invoca escribiendo `/verify-after-changes`, pidiéndolo por nombre, o al terminar de implementar algo.
 
 ## Pendiente / en curso
 
+- **Migración a Supabase — Fase 1 casi cerrada.** Falta: (1) pasos de Auth en el dashboard de Supabase (`supabase/setup.md`: desactivar signups, crear usuario admin, `insert into perfiles`); (2) primer deploy a Netlify (`README.md`); (3) `verify-after-changes`. Después siguen las Fases 2-6 (`docs/plans/2026-08-31-migracion-supabase.md`).
 - `revision-final` todavía no se ha corrido ni una vez — no hay historial en `revision-final.md` aún.

@@ -1,0 +1,22 @@
+# Joyería DC — configuración de Netlify
+# Sitio estático, sin build. Se publica la raíz del repo tal cual.
+
+[build]
+  publish = "."
+  command = ""
+
+# El sitio sirve https://<sitio>/admin/ desde admin/index.html automáticamente.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=()"
+
+# El panel no debe indexarse
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
