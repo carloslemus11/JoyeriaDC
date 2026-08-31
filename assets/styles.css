@@ -216,16 +216,12 @@
   }
   .hero-copy{
     position:relative; z-index:1;
-    background:var(--surface-glass);
-    backdrop-filter:blur(20px);
-    -webkit-backdrop-filter:blur(20px);
-    border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    padding:44px 40px;
   }
-  @media (max-width:720px){ .hero-copy{padding:28px 22px;} }
   .hero h1{
     font-size:clamp(40px, 6vw, 76px); line-height:1.03; letter-spacing:-.01em;
+    /* La "J" de Fraunces cuelga su pie a la izquierda; este pequeño desplazamiento
+       la deja en línea con "hechas" / "durar" sin que sobresalga del margen. */
+    padding-left:.06em;
   }
   .hero h1 em{font-style:italic; font-weight:400; color:var(--gold);}
   .hero .lede{margin-top:24px; font-size:19px;}
