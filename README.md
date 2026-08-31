@@ -7,10 +7,9 @@ como Claude Artifact; desde la Fase 1 de la migración corre sobre **Supabase**
 **En producción:** <https://joyeriadc.netlify.app>
 (panel de administración en <https://joyeriadc.netlify.app/admin/>)
 
-Publicado con **Netlify Drop** (arrastrar carpeta). Para actualizar tras un
-cambio: volver a arrastrar la carpeta a <https://app.netlify.com/drop>, o
-conectar el repo de GitHub (`carloslemus11/JoyeriaDC`) en Netlify para
-auto-deploy — ver "Publicar en Netlify" abajo.
+El sitio Netlify está **conectado al repo GitHub `carloslemus11/JoyeriaDC`**
+(branch `main`): cada `git push` a `main` redespliega solo, con la carpeta
+`netlify/edge-functions/` incluida. No hace falta arrastrar nada.
 
 Ver el contexto completo del proyecto en [`CLAUDE.md`](CLAUDE.md), el spec de la
 migración en [`docs/specs/2026-08-31-migracion-supabase.md`](docs/specs/2026-08-31-migracion-supabase.md)
