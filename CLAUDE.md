@@ -58,7 +58,8 @@ Sobre la estructura del sitio (post Fase 1):
 - El CSS vive en `assets/styles.css` (linkeado en el `<head>`), no inline. Sigue teniendo las texturas de seda en base64 — por eso pesa ~240 KB.
 - El JS vive en `assets/main.js`, cargado como **módulo ES** (`<script type="module">`). Es el mismo IIFE de antes más un `import` del cliente de Supabase y una llamada a `healthcheck()`.
 - Como `main.js`/`admin.js` son módulos, el sitio **debe servirse por HTTP** (server local o Netlify); ya no funciona abriendo el `.html` con `file://`.
-- Las 9 fotos de producto siguen embebidas como `data:image/...;base64,...` en los `<img>` de `index.html` (pasan a Supabase Storage en la Fase 2). Por eso `index.html` todavía pesa ~870 KB.
+- **Fase 2 hecha (parte pública):** el catálogo (4 categorías + 9 piezas) ya NO está en el HTML — vive en Supabase (`categorias`, `piezas`, `pieza_fotos`) y lo renderiza `assets/main.js` con `assets/catalogo.js`. `index.html` bajó a ~21 KB (se fue todo el base64 de producto).
+- Las 9 fotos de producto están como archivos en `assets/piezas/` (copiadas de `IMAGENES JOYAS/Versiones para web/`). `pieza_fotos.storage_path` apunta a `assets/piezas/*.jpeg` por ahora; el botón "Importar fotos iniciales" del panel las subirá al bucket `piezas` de Storage y cambiará el path a `catalogo/*.jpeg`. `fotoUrl()` en `catalogo.js` resuelve: `assets/…` o `/…` = archivo del sitio; el resto = objeto de Storage.
 - `assets/config.js` NO es secreto: la publishable key de Supabase es pública por diseño; la seguridad la dan las políticas RLS. Se versiona en git.
 
 **Ya no se publica como Claude Artifact.** Un Artifact no puede conectarse a Supabase (su CSP bloquea todo fetch externo). La forma de publicar ahora es Netlify — ver `README.md`. El Artifact anterior queda obsoleto.
@@ -77,7 +78,7 @@ Sobre la estructura del sitio (post Fase 1):
 Plan completo en `docs/plans/2026-08-31-migracion-supabase.md`. Spec en `docs/specs/2026-08-31-migracion-supabase.md`.
 
 - **Fase 1 — Fundación:** EN CURSO. Hecho: esquema + RLS + Storage + git + reestructura a multi-archivo + `assets/config.js`/`supabase-client.js` + shell de `/admin` con login + `netlify.toml`. Falta: pasos de Auth en el dashboard, primer deploy a Netlify, verificación.
-- **Fase 2 — Catálogo + panel admin:** pendiente. Piezas/categorías/fotos a Supabase; CRUD en `/admin`.
+- **Fase 2 — Catálogo + panel admin:** EN CURSO. Hecho: seed de `categorias`/`piezas`/`pieza_fotos`, columnas `cta_label`/`cta_msg`, trigger `updated_at`, `assets/catalogo.js`, render público del catálogo desde la base, `assets/piezas/` con las 9 fotos. Falta: CRUD en `/admin` (tareas 5-6 del plan `docs/plans/2026-08-31-migracion-supabase-fase2.md`) + botón "Importar fotos iniciales" a Storage — requiere el usuario admin creado para probarlo.
 - **Fase 3 — Reseñas y sugerencias en base de datos:** pendiente. Hoy el widget de estrellas y el form de sugerencias siguen en su versión local (no persisten).
 - **Fase 4 — Registro de cotizaciones:** pendiente.
 - **Fase 5 — Textos editables del sitio:** pendiente (tabla `contenido_sitio` ya existe, vacía).
@@ -169,7 +170,7 @@ No existe un archivo de logo real (se buscó en Canva y en carpetas locales del 
 |---|---|---|
 | Nav | — | Logo + "Joyería DC", links a cada sección, botón "Cotizar" (WhatsApp) |
 | Hero | `#top` | Titular, bajada, botones CTA, fila de stats (18K / seguidores IG / local), logo grande |
-| Colección | `#coleccion` | 4 tarjetas de categoría (Anillos, Cadenas, Pulseras, Dijes y accesorios) + galería de 9 fotos reales de producto (grid tipo Instagram, cada una abre WhatsApp con el nombre de la pieza) |
+| Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas — **ambas se cargan desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Cada pieza abre WhatsApp con su nombre. Estados de carga (shimmer) y de error (mensaje + WhatsApp) en `catalogo`. |
 | Atelier | `#atelier` | 3 bloques "por qué elegirnos" (oro 18K real, diseño con carácter, atención en Ibagué) |
 | Reseñas | `#resenas` | Widget de calificación de 1-5 estrellas, funcional |
 | Sugerencias | `#sugerencias` | Formulario de sugerencias + lista de sugerencias recibidas |

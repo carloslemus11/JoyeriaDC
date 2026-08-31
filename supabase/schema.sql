@@ -13,6 +13,8 @@ create table public.categorias (
   nombre      text not null,
   slug        text not null unique,
   descripcion text,
+  cta_label   text,           -- texto del botón "Cotizar ... →" (fase2_categorias_cta)
+  cta_msg     text,           -- mensaje de WhatsApp del botón; si null, el front genera uno genérico
   orden       int  not null default 0,
   activa      boolean not null default true,
   created_at  timestamptz not null default now()
@@ -83,5 +85,18 @@ create index piezas_categoria_idx   on public.piezas(categoria_id);
 create index pieza_fotos_pieza_idx  on public.pieza_fotos(pieza_id);
 create index sugerencias_estado_idx on public.sugerencias(estado);
 create index cotizaciones_pieza_idx on public.cotizaciones(pieza_id);
+
+-- piezas.updated_at se mantiene solo (migración fase2_piezas_updated_at)
+create or replace function public.touch_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create trigger piezas_touch_updated_at
+  before update on public.piezas
+  for each row execute function public.touch_updated_at();
 
 -- favoritos (Fase 6) se creará solo si se aprueba esa fase.
