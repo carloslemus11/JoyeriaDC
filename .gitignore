@@ -12,5 +12,8 @@ dist/
 *.log
 *.tmp
 
+# Config local de Claude Code (permisos por máquina; no se comparte)
+.claude/settings.local.json
+
 # NOTA: assets/config.js SÍ se versiona.
 # La publishable key de Supabase es pública por diseño; la seguridad está en las políticas RLS.
