@@ -86,18 +86,21 @@ function initPanel() {
   panelReady = true;
 
   const tabs = [...document.querySelectorAll(".admin-tab[data-tab]")];
-  const panes = ["piezas", "categorias", "sugerencias"];
+  const panes = ["piezas", "categorias", "sugerencias", "cotizaciones", "textos"];
   tabs.forEach((b) => {
     b.addEventListener("click", () => {
       tabs.forEach((x) => x.classList.toggle("is-active", x === b));
       panes.forEach((p) => { $("tab-" + p).hidden = b.dataset.tab !== p; });
       if (b.dataset.tab === "sugerencias") refreshSugerencias();
+      if (b.dataset.tab === "cotizaciones") refreshCotizaciones();
+      if (b.dataset.tab === "textos") refreshTextos();
     });
   });
 
   $("nuevaPiezaBtn").addEventListener("click", () => openPiezaForm(null));
   $("nuevaCatBtn").addEventListener("click", () => openCatForm(null));
   $("importFotosBtn").addEventListener("click", importarFotosIniciales);
+  $("guardarTextosBtn").addEventListener("click", guardarTextos);
   $("modalClose").addEventListener("click", closeModal);
   $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) closeModal(); });
 
@@ -155,6 +158,102 @@ async function borrarSugerencia(s) {
   const { error } = await sb.from("sugerencias").delete().eq("id", s.id);
   if (error) { toast("No se pudo borrar: " + error.message, "err"); return; }
   toast("Sugerencia borrada."); refreshSugerencias();
+}
+
+/* ---------- cotizaciones (Fase 4) ---------- */
+async function refreshCotizaciones() {
+  const { data, error } = await sb
+    .from("cotizaciones")
+    .select("etiqueta, origen, created_at, piezas(nombre)")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) { toast("No se pudieron cargar las cotizaciones: " + error.message, "err"); return; }
+  const rows = data || [];
+  const hace30 = Date.now() - 30 * 864e5;
+  $("cotizTotal").textContent = rows.length >= 500 ? "500+" : String(rows.length);
+  $("cotiz30").textContent = String(rows.filter((r) => new Date(r.created_at).getTime() >= hace30).length);
+
+  const nombreDe = (r) => (r.piezas && r.piezas.nombre) || r.etiqueta || "(sin etiqueta)";
+  const conteo = {};
+  rows.forEach((r) => { const k = nombreDe(r); conteo[k] = (conteo[k] || 0) + 1; });
+  const ranking = Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  const rk = $("cotizRanking");
+  rk.innerHTML = ranking.length
+    ? ranking.map(([k, n]) => `<div class="admin-row"><div class="admin-row-main"><strong>${esc(k)}</strong></div><div class="admin-mono">${n} clic${n === 1 ? "" : "s"}</div></div>`).join("")
+    : '<p class="admin-empty">Aún no hay clics de "Cotizar" registrados.</p>';
+
+  const lg = $("cotizLog");
+  lg.innerHTML = rows.length
+    ? rows.slice(0, 100).map((r) => `<div class="admin-row"><div class="admin-row-main"><strong>${esc(nombreDe(r))}</strong><span class="admin-mono">${esc(r.origen || "")} · ${new Date(r.created_at).toLocaleString("es-CO")}</span></div></div>`).join("")
+    : '<p class="admin-empty">Sin registros.</p>';
+}
+
+/* ---------- textos del sitio (Fase 5) ---------- */
+const TEXTOS_GRUPOS = [
+  ["Hero", [
+    ["hero_eyebrow", "Eyebrow", "input"],
+    ["hero_titulo", "Título (usa *palabra* para cursiva, salto de línea para <br>)", "textarea"],
+    ["hero_lede", "Bajada", "textarea"],
+  ]],
+  ["Stats", [
+    ["stat1_num", "Stat 1 — número", "input"], ["stat1_label", "Stat 1 — texto", "input"],
+    ["stat2_num", "Stat 2 — número", "input"], ["stat2_label", "Stat 2 — texto", "input"],
+    ["stat3_num", "Stat 3 — número", "input"], ["stat3_label", "Stat 3 — texto", "input"],
+  ]],
+  ["Atelier", [
+    ["atelier_titulo", "Título de la sección", "input"],
+    ["atelier1_titulo", "Bloque 1 — título", "input"], ["atelier1_texto", "Bloque 1 — texto", "textarea"],
+    ["atelier2_titulo", "Bloque 2 — título", "input"], ["atelier2_texto", "Bloque 2 — texto", "textarea"],
+    ["atelier3_titulo", "Bloque 3 — título", "input"], ["atelier3_texto", "Bloque 3 — texto", "textarea"],
+  ]],
+  ["Ubicación", [
+    ["ubic_titulo", "Título", "input"],
+    ["ubic_direccion", "Dirección (línea 1)", "input"],
+    ["ubic_ciudad", "Ciudad / país (línea 2)", "input"],
+  ]],
+  ["Footer", [
+    ["footer_desc", "Descripción de marca", "textarea"],
+  ]],
+];
+let textosCache = {};
+
+async function refreshTextos() {
+  const { data, error } = await sb.from("contenido_sitio").select("clave, valor");
+  if (error) { toast("No se pudieron cargar los textos: " + error.message, "err"); return; }
+  textosCache = {};
+  (data || []).forEach((r) => { textosCache[r.clave] = r.valor || ""; });
+  const form = $("textosForm");
+  form.innerHTML = TEXTOS_GRUPOS.map(([grupo, campos]) => `
+    <fieldset class="admin-textos-grupo">
+      <legend>${grupo}</legend>
+      ${campos.map(([clave, label, tipo]) => {
+        const v = esc(textosCache[clave] || "");
+        return `<label class="admin-field"><span>${label}</span>${
+          tipo === "textarea"
+            ? `<textarea name="${clave}" rows="3">${v}</textarea>`
+            : `<input type="text" name="${clave}" value="${v}">`
+        }</label>`;
+      }).join("")}
+    </fieldset>`).join("");
+}
+
+async function guardarTextos() {
+  const form = $("textosForm");
+  const fd = new FormData(form);
+  const cambios = [];
+  for (const [clave, valor] of fd.entries()) {
+    if ((textosCache[clave] || "") !== valor) {
+      cambios.push({ clave, valor, actualizado_at: new Date().toISOString() });
+    }
+  }
+  if (!cambios.length) { toast("No hay cambios que guardar."); return; }
+  const btn = $("guardarTextosBtn");
+  btn.disabled = true; btn.textContent = "Guardando…";
+  const { error } = await sb.from("contenido_sitio").upsert(cambios, { onConflict: "clave" });
+  btn.disabled = false; btn.textContent = "Guardar cambios";
+  if (error) { toast("No se pudo guardar: " + error.message, "err"); return; }
+  cambios.forEach((c) => { textosCache[c.clave] = c.valor; });
+  toast(`${cambios.length} texto(s) guardado(s). Recarga el sitio para verlos.`);
 }
 
 let categoriasCache = [];

@@ -20,7 +20,9 @@ JOYERIA.DC./
 │   ├── config.js                       # SUPABASE_URL + publishable key + WA_NUMBER (público por diseño, SÍ se versiona)
 │   ├── supabase-client.js              # Cliente Supabase compartido (sitio + admin) + healthcheck
 │   ├── catalogo.js                     # Lectura del catálogo (categorías/piezas/fotoUrl) — Fase 2
-│   ├── interacciones.js                # Calificaciones y sugerencias — Fase 3
+│   ├── interacciones.js                # Calificaciones, sugerencias, registro de cotizaciones — Fases 3-4
+│   ├── contenido.js                    # Textos editables del sitio ([data-cs]) — Fase 5
+│   ├── cuenta.js                       # Cuentas de cliente + favoritos — Fase 6
 │   └── piezas/                         # Respaldo de las 9 fotos (ya en Storage; no se sirven)
 ├── admin/
 │   ├── index.html                      # Panel de administración (Fase 1: solo login + placeholder)
@@ -86,9 +88,9 @@ Plan completo en `docs/plans/2026-08-31-migracion-supabase.md`. Spec en `docs/sp
 - **Fase 2 — Catálogo + panel admin:** HECHA y verificada (2026-08-31). Catálogo (4 cat + 9 piezas) en Supabase; `assets/catalogo.js` + `assets/main.js` lo renderizan en el sitio público. Panel `/admin` completo (`admin/admin.js` + `admin/admin.css`): login + gate de admin, tabs Piezas/Categorías, CRUD con modal, activar/desactivar, borrar con confirmación in-app, subir/reemplazar foto a Storage, botón "Importar fotos iniciales". Las 9 fotos ya están en el bucket `piezas/catalogo/*` y el sitio las sirve desde Storage. `assets/piezas/` quedó como respaldo (ya no se sirve; se puede borrar). Verificado en el navegador con la sesión admin real: CRUD OK, trigger `updated_at` OK, anon no puede escribir.
   - **Notas para futuras fases del panel:** (1) `admin.css` tiene `[hidden]{display:none!important}` porque `.admin-modal`/`.admin-shell` usan `display:flex`. (2) NO usar `window.confirm`/`alert`/`prompt` — devuelven false/nada en varios navegadores; usar `confirmar()` de `admin/admin.js`. (3) el panel usa un único `#modal` + `#modalForm` reutilizado por `openModal()` y `confirmar()`.
 - **Fase 3 — Reseñas y sugerencias en base de datos:** HECHA y verificada (2026-08-31). Calificaciones y sugerencias persisten en Supabase; sugerencias con moderación previa (solo se publican las aprobadas desde `/admin`). Función `resumen_calificaciones()`. Nuevo módulo `assets/interacciones.js`. Panel: pestaña Sugerencias activa. Verificado en el navegador como anon y como admin (calificar, enviar sugerencia, aprobar → aparece en el sitio, ocultar, borrar; anon no puede autoaprobar).
-- **Fase 4 — Registro de cotizaciones:** pendiente.
-- **Fase 5 — Textos editables del sitio:** pendiente (tabla `contenido_sitio` ya existe, vacía).
-- **Fase 6 — Cuentas de clientes:** condicional, se decide al cerrar la Fase 5.
+- **Fase 4 — Registro de cotizaciones:** HECHA (2026-08-31). Cada clic de `.wa-link` inserta en `public.cotizaciones` (best effort, no bloquea WhatsApp) con `etiqueta`/`origen` (`data-cotiza`/`data-cotiza-origen` en el HTML y en el render de la galería/categorías) y `pieza_id` cuando aplica. Panel: pestaña "Cotizaciones" (ranking + total 30 días + últimos 100). Índice `cotizaciones_created_idx`. Verificado: los clics se registran y WhatsApp abre igual; anon no puede leer cotizaciones.
+- **Fase 5 — Textos editables del sitio:** HECHA (2026-08-31). 20 claves en `public.contenido_sitio` (seed = texto que estaba en el HTML). `assets/contenido.js` aplica a `[data-cs]` al cargar (fallback: si falla, se quedan los del HTML). `hero_titulo` usa `*x*`→`<em>` y `\n`→`<br>` (`[data-cs-html]`). Panel: pestaña "Textos" (form agrupado + "Guardar cambios"). Verificado: cambios se reflejan al recargar; si Supabase cae, se ven los del HTML.
+- **Fase 6 — Cuentas de clientes:** HECHA (2026-08-31) — el usuario autorizó construirla. Tabla `public.favoritos` (pk usuario+pieza, RLS "cada quien lo suyo"). `assets/cuenta.js` + modales `#cuentaModal`/`#favModal` + botón "Cuenta" en la nav + corazón por pieza en la galería. "Mis favoritos" arma un mensaje de WhatsApp con la lista. **Requiere que el registro público de usuarios esté ACTIVADO** en Supabase Auth (se había desactivado en Fase 1); un registro nuevo NO obtiene fila en `perfiles`, así que no puede entrar al panel admin. El front maneja "registro deshabilitado" y "confirma tu correo" con mensajes claros. Verificado a nivel de RLS y de UI (con signups aún desactivados); falta la prueba end-to-end de favoritos con una cuenta real.
 
 ## Modelo de negocio reflejado en el sitio
 
@@ -190,7 +192,10 @@ No existe un archivo de logo real (se buscó en Canva y en carpetas locales del 
 - **Calificación de servicio** (Fase 3): 5 botones de estrella; al hacer clic se inserta en `public.calificaciones` (RLS: anon inserta 1-5) y se repinta el promedio con la función `public.resumen_calificaciones()` (RPC). Un flag `localStorage["dc_rated"]` evita repetir en el mismo dispositivo (riesgo aceptado, evadible). Lógica en `assets/main.js` (`initRatings`) + `assets/interacciones.js`. Ya no existe `#ratingLog`.
 - **Sugerencias** (Fase 3): formulario → `public.sugerencias` con `estado='pendiente'`. El sitio público solo lista las `estado='aprobada'` (RLS). El dueño modera en `/admin` → pestaña **Sugerencias** (Aprobar / Ocultar / Borrar) que además muestra el resumen de calificaciones. Lógica en `assets/main.js` (`initSuggestions`) + `assets/interacciones.js` + `admin/admin.js` (`refreshSugerencias`).
 - **Scroll-reveal**: `IntersectionObserver` agrega la clase `.is-visible` a elementos `.reveal` cuando entran en pantalla.
-- **Nav**: se vuelve translúcida/blur al hacer scroll; menú hamburguesa en móvil con `aria-expanded`.
+- **Nav**: se vuelve translúcida/blur al hacer scroll; menú hamburguesa en móvil con `aria-expanded`. Botón "Cuenta" (Fase 6) junto a "Cotizar".
+- **Registro de cotizaciones** (Fase 4): un listener delegado en `document` (captura) sobre `.wa-link` inserta en `cotizaciones` antes de abrir WhatsApp. No usa `await` (best effort). La galería y las categorías traen `data-cotiza`/`data-cotiza-origen`/`data-pieza-id`; los `.wa-link` estáticos traen `data-cotiza`/`data-cotiza-origen` en el HTML.
+- **Textos editables** (Fase 5): elementos con `data-cs="clave"` (y `data-cs-html` para el h1 del hero). `assets/contenido.js` los rellena desde `contenido_sitio`. Si la clave no existe o la carga falla, se queda el texto del HTML.
+- **Cuentas de cliente + favoritos** (Fase 6): el mismo cliente `sb` sirve para clientes y para el admin; la diferencia es solo la fila en `perfiles`. Corazón por pieza; sin sesión abre `#cuentaModal`. `#favModal` lista los favoritos y arma un WhatsApp con todos. **El registro público debe estar activado en Supabase Auth para que funcione.**
 
 ## Fuentes de las fotos de producto
 

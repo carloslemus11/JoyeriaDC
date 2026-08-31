@@ -472,3 +472,56 @@
   .fab:hover{transform:scale(1.06);}
   .fab svg{width:26px; height:26px;}
   .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+
+  /* ===== Fase 6: cuentas + favoritos, y modales genéricos ===== */
+  .nav-right{display:flex; align-items:center; gap:8px;}
+  .nav-cuenta{white-space:nowrap;}
+
+  /* galería: el <a> cubre la celda; el corazón va por encima */
+  .gallery-item{position:relative; display:block; aspect-ratio:1/1; overflow:hidden; background:var(--bg-alt);}
+  .gallery-link{position:absolute; inset:0; z-index:1; text-decoration:none;}
+  .gallery-item .gallery-tag{z-index:2;}
+  .fav-heart{
+    position:absolute; top:8px; right:8px; z-index:3;
+    width:34px; height:34px; border-radius:50%; border:none; cursor:pointer;
+    background:rgba(0,0,0,.42); color:#fff; display:flex; align-items:center; justify-content:center;
+    -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); transition:transform .15s ease, background .15s ease;
+  }
+  .fav-heart svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2;}
+  .fav-heart:hover{transform:scale(1.1);}
+  .fav-heart.is-on{background:var(--gold-strong); color:#fff;}
+  .fav-heart.is-on svg{fill:currentColor;}
+
+  .dc-modal{
+    position:fixed; inset:0; z-index:200; display:flex; align-items:flex-start; justify-content:center;
+    padding:44px 16px; background:rgba(44,32,28,.55); overflow-y:auto;
+  }
+  .dc-modal[hidden]{display:none;}
+  .dc-modal-box{
+    position:relative; width:100%; max-width:420px;
+    background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:26px;
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.5);
+  }
+  .dc-modal-x{position:absolute; top:12px; right:14px; background:none; border:none; font-size:1.5rem; line-height:1; color:var(--muted); cursor:pointer;}
+  .dc-modal-title{font-family:var(--font-display); font-weight:600; color:var(--ink); margin:0 0 16px; font-size:1.2rem;}
+  .dc-tabs{display:flex; gap:6px; margin-bottom:16px;}
+  .dc-tab{flex:1; font:inherit; font-size:.9rem; padding:8px; border-radius:999px; border:1px solid var(--border); background:none; color:var(--ink-soft); cursor:pointer;}
+  .dc-tab.is-active{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  .dc-form{display:flex; flex-direction:column; gap:12px;}
+  .dc-field{display:flex; flex-direction:column; gap:5px;}
+  .dc-field span{font-size:.8rem; font-weight:600; color:var(--ink);}
+  .dc-field input{font:inherit; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--ink);}
+  .dc-form .btn, #cuentaAuth .btn{width:100%; justify-content:center;}
+  #cuentaAuth{display:flex; flex-direction:column; gap:10px;}
+  .dc-hola{color:var(--ink); font-size:1rem; margin:0 0 4px;}
+  .dc-msg{font-size:.85rem; margin:0;}
+  .dc-nota{margin-top:14px; font-size:.8rem; color:var(--muted); line-height:1.5;}
+
+  .fav-list{display:flex; flex-direction:column; gap:10px; margin-bottom:16px;}
+  .fav-row{display:flex; align-items:center; gap:12px;}
+  .fav-thumb{width:48px; height:48px; border-radius:10px; overflow:hidden; background:var(--bg-alt); flex:none;}
+  .fav-thumb img{width:100%; height:100%; object-fit:cover;}
+  .fav-name{flex:1; color:var(--ink); font-size:.95rem;}
+  .fav-quitar{font:inherit; font-size:.8rem; background:none; border:1px solid var(--border); border-radius:999px; padding:5px 12px; color:var(--muted); cursor:pointer;}
+  .fav-empty{color:var(--muted); font-size:.9rem;}
+  #favCotizar{width:100%; justify-content:center; white-space:normal;}

@@ -33,3 +33,12 @@ export async function enviarSugerencia({ nombre, texto }) {
     .insert({ nombre: nombre || null, texto, estado: "pendiente" });
   if (error) throw error;
 }
+
+/* Registro "best effort" de un clic de "Cotizar" (no bloquea, no lanza). */
+export function registrarCotizacion({ piezaId, etiqueta, origen }) {
+  try {
+    sb.from("cotizaciones")
+      .insert({ pieza_id: piezaId || null, etiqueta: etiqueta || null, origen: origen || null })
+      .then(function () {}, function () {});
+  } catch (e) { /* nada */ }
+}

@@ -3,8 +3,13 @@ import { healthcheck } from "./supabase-client.js";
 import { getCategorias, getPiezas, fotoUrl } from "./catalogo.js";
 import {
   getResumenCalificaciones, enviarCalificacion,
-  getSugerenciasAprobadas, enviarSugerencia,
+  getSugerenciasAprobadas, enviarSugerencia, registrarCotizacion,
 } from "./interacciones.js";
+import { getContenido, aplicarContenido } from "./contenido.js";
+import {
+  sesionActual, onCambioSesion, registrarse, iniciarSesion, cerrarSesion,
+  getFavoritos, getFavoritoIds, agregarFavorito, quitarFavorito,
+} from "./cuenta.js";
 
 healthcheck();
 
@@ -74,6 +79,7 @@ function renderCategorias(grid, categorias) {
     var label = c.cta_label || ("Cotizar " + c.nombre.toLowerCase() + " →");
     var link = el("a", {
       class: "cat-link wa-link", href: "#", "data-wa-msg": msg,
+      "data-cotiza": "Categoría: " + c.nombre, "data-cotiza-origen": "categoria",
       target: "_blank", rel: "noopener"
     });
     link.textContent = label;
@@ -87,11 +93,7 @@ function renderCategorias(grid, categorias) {
 function renderPiezas(grid, piezas) {
   grid.innerHTML = "";
   piezas.forEach(function (pieza) {
-    var a = el("a", {
-      class: "gallery-item wa-link", href: "#",
-      "data-wa-msg": "Hola, quiero comprar/cotizar: " + pieza.nombre + ".",
-      target: "_blank", rel: "noopener"
-    });
+    var cell = el("div", { class: "gallery-item", "data-pieza-id": pieza.id });
     if (pieza.foto) {
       var img = el("img", {
         src: fotoUrl(pieza.foto.storage_path),
@@ -100,20 +102,41 @@ function renderPiezas(grid, piezas) {
       });
       img.addEventListener("error", function handler() {
         img.removeEventListener("error", handler);
-        a.classList.add("no-photo");
+        cell.classList.add("no-photo");
         img.remove();
       });
-      a.appendChild(img);
+      cell.appendChild(img);
     } else {
-      a.classList.add("no-photo");
+      cell.classList.add("no-photo");
     }
+
+    var link = el("a", {
+      class: "gallery-link wa-link", href: "#",
+      "aria-label": "Cotizar " + pieza.nombre + " por WhatsApp",
+      "data-wa-msg": "Hola, quiero comprar/cotizar: " + pieza.nombre + ".",
+      "data-cotiza": pieza.nombre, "data-cotiza-origen": "galeria",
+      "data-pieza-id": pieza.id,
+      target: "_blank", rel: "noopener"
+    });
+    cell.appendChild(link);
+
+    var heart = el("button", {
+      class: "fav-heart", type: "button",
+      "aria-label": "Guardar " + pieza.nombre + " en favoritos",
+      "data-pieza-id": pieza.id
+    });
+    heart.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 8.5 2.5 5 6 5c2 0 3.4 1.2 4 2.3C10.6 6.2 12 5 14 5c3.5 0 5 3.5 3.5 7-2.5 4.5-9.5 9-9.5 9z"/></svg>';
+    cell.appendChild(heart);
+
     var tag = el("span", { class: "gallery-tag" });
     tag.textContent = pieza.nombre;
-    a.appendChild(tag);
-    grid.appendChild(a);
+    cell.appendChild(tag);
+
+    grid.appendChild(cell);
   });
   grid.removeAttribute("data-estado");
   wireWaLinks(grid);
+  if (window.__dcMarcarFavoritos) window.__dcMarcarFavoritos();
 }
 
 function renderCatalogoError(catGrid, galleryGrid) {
@@ -155,8 +178,19 @@ async function cargarCatalogo() {
 function initSitio() {
   wireWaLinks(document);
 
-  var navWa = document.getElementById("navWa");
-  if (navWa) navWa.setAttribute("href", waHref("Hola, quiero cotizar una joya de Joyería DC."));
+  // Fase 4: registrar cada clic de "Cotizar" antes de abrir WhatsApp (best effort).
+  document.addEventListener("click", function (e) {
+    var link = e.target && e.target.closest ? e.target.closest(".wa-link") : null;
+    if (!link) return;
+    var etiqueta = link.getAttribute("data-cotiza")
+      || (link.getAttribute("data-wa-msg") || "").slice(0, 120)
+      || "Cotizar";
+    registrarCotizacion({
+      piezaId: link.getAttribute("data-pieza-id") || null,
+      etiqueta: etiqueta,
+      origen: link.getAttribute("data-cotiza-origen") || "otro",
+    });
+  }, true);
 
   var comoLlegar = document.getElementById("comoLlegar");
   if (comoLlegar) {
@@ -190,9 +224,19 @@ function initSitio() {
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
+  cargarContenido();
   initRatings();
   initSuggestions();
   cargarCatalogo();
+  initCuenta();
+}
+
+async function cargarContenido() {
+  try {
+    aplicarContenido(await getContenido());
+  } catch (e) {
+    console.warn("[Joyería DC] textos del sitio:", e && e.message);
+  }
 }
 
 var STAR_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg>';
@@ -335,6 +379,184 @@ function initSuggestions() {
   });
 
   cargarLista();
+}
+
+/* ---------- cuentas de cliente + favoritos (Fase 6) ---------- */
+function initCuenta() {
+  var btn = document.getElementById("cuentaBtn");
+  var modal = document.getElementById("cuentaModal");
+  var favModal = document.getElementById("favModal");
+  if (!btn || !modal) return;
+
+  var anonView = document.getElementById("cuentaAnon");
+  var authView = document.getElementById("cuentaAuth");
+  var form = document.getElementById("cuentaForm");
+  var emailEl = document.getElementById("ctaEmail");
+  var passEl = document.getElementById("ctaPass");
+  var submitBtn = document.getElementById("ctaSubmit");
+  var msgEl = document.getElementById("ctaMsg");
+  var whoEl = document.getElementById("ctaWho");
+  var modo = "entrar";
+  var favIds = new Set();
+
+  function abrir(m) { m.hidden = false; }
+  function cerrar(m) { m.hidden = true; }
+  function msg(text, kind) {
+    if (!text) { msgEl.hidden = true; return; }
+    msgEl.textContent = text;
+    msgEl.style.color = kind === "ok" ? "var(--gold-strong)" : "#B3261E";
+    msgEl.hidden = false;
+  }
+
+  document.querySelectorAll("[data-cerrar]").forEach(function (x) {
+    x.addEventListener("click", function () { cerrar(modal); cerrar(favModal); });
+  });
+  [modal, favModal].forEach(function (m) {
+    m.addEventListener("click", function (e) { if (e.target === m) cerrar(m); });
+  });
+
+  document.querySelectorAll(".dc-tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      modo = t.getAttribute("data-modo");
+      document.querySelectorAll(".dc-tab").forEach(function (x) { x.classList.toggle("is-active", x === t); });
+      submitBtn.textContent = modo === "crear" ? "Crear cuenta" : "Entrar";
+      passEl.setAttribute("autocomplete", modo === "crear" ? "new-password" : "current-password");
+      msg(null);
+    });
+  });
+
+  async function pintarSesion(session) {
+    var hay = !!session;
+    anonView.hidden = hay;
+    authView.hidden = !hay;
+    btn.textContent = hay ? "Mi cuenta" : "Cuenta";
+    if (hay) {
+      whoEl.textContent = session.user.email || "";
+      try { favIds = await getFavoritoIds(); } catch (e) { favIds = new Set(); }
+    } else {
+      favIds = new Set();
+    }
+    marcarFavoritos();
+  }
+
+  function marcarFavoritos() {
+    document.querySelectorAll(".fav-heart").forEach(function (h) {
+      h.classList.toggle("is-on", favIds.has(h.getAttribute("data-pieza-id")));
+    });
+  }
+  window.__dcMarcarFavoritos = marcarFavoritos;
+
+  btn.addEventListener("click", async function () {
+    msg(null);
+    await pintarSesion(await sesionActual());
+    abrir(modal);
+  });
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    msg(null);
+    submitBtn.disabled = true;
+    var email = emailEl.value.trim();
+    var pass = passEl.value;
+    try {
+      if (modo === "crear") {
+        var r = await registrarse(email, pass);
+        if (r.necesitaConfirmar) {
+          msg("Cuenta creada. Revisa tu correo para confirmarla y luego entra.", "ok");
+          submitBtn.disabled = false;
+          return;
+        }
+      } else {
+        await iniciarSesion(email, pass);
+      }
+      form.reset();
+      await pintarSesion(await sesionActual());
+    } catch (err) {
+      var m = (err && err.message) || "";
+      if (/already registered/i.test(m)) msg("Ese correo ya tiene cuenta. Entra con tu contraseña.");
+      else if (/Invalid login/i.test(m)) msg("Correo o contraseña incorrectos.");
+      else if (/should be at least|password.*6/i.test(m)) msg("La contraseña debe tener al menos 6 caracteres.");
+      else if (/signups? not allowed|signup_disabled/i.test(m)) msg("El registro de cuentas está deshabilitado en este momento.");
+      else if (/Email not confirmed/i.test(m)) msg("Confirma tu correo antes de entrar (revisa tu bandeja).");
+      else msg("No se pudo completar. Intenta de nuevo.");
+      submitBtn.disabled = false;
+      return;
+    }
+    submitBtn.disabled = false;
+  });
+
+  document.getElementById("ctaLogout").addEventListener("click", async function () {
+    await cerrarSesion();
+    await pintarSesion(null);
+  });
+
+  document.getElementById("verFavsBtn").addEventListener("click", async function () {
+    cerrar(modal);
+    await renderFavoritos();
+    abrir(favModal);
+  });
+
+  async function renderFavoritos() {
+    var list = document.getElementById("favList");
+    var empty = document.getElementById("favEmpty");
+    var cta = document.getElementById("favCotizar");
+    list.innerHTML = "";
+    var items = [];
+    try { items = await getFavoritos(); } catch (e) { /* nada */ }
+    empty.hidden = items.length > 0;
+    cta.hidden = items.length === 0;
+    items.forEach(function (p) {
+      var row = document.createElement("div");
+      row.className = "fav-row";
+      var src = p.foto ? fotoUrl(p.foto.storage_path) : "";
+      row.innerHTML =
+        '<div class="fav-thumb">' + (src ? '<img src="' + src + '" alt="">' : "") + "</div>" +
+        '<span class="fav-name"></span>' +
+        '<button class="fav-quitar" type="button" aria-label="Quitar">Quitar</button>';
+      row.querySelector(".fav-name").textContent = p.nombre;
+      row.querySelector(".fav-quitar").addEventListener("click", async function () {
+        try {
+          await quitarFavorito(p.id);
+          favIds.delete(p.id);
+          marcarFavoritos();
+          await renderFavoritos();
+        } catch (e) { /* nada */ }
+      });
+      list.appendChild(row);
+    });
+    if (items.length) {
+      var nombres = items.map(function (p) { return "• " + p.nombre; }).join("\n");
+      cta.setAttribute("data-wa-msg", "Hola, me interesan estas piezas de Joyería DC:\n" + nombres);
+      cta.setAttribute("href", waHref(cta.getAttribute("data-wa-msg")));
+    }
+  }
+
+  // clic en un corazón (delegado)
+  document.addEventListener("click", async function (e) {
+    var heart = e.target && e.target.closest ? e.target.closest(".fav-heart") : null;
+    if (!heart) return;
+    e.preventDefault();
+    var piezaId = heart.getAttribute("data-pieza-id");
+    var session = await sesionActual();
+    if (!session) { await pintarSesion(null); abrir(modal); return; }
+    heart.disabled = true;
+    try {
+      if (favIds.has(piezaId)) {
+        await quitarFavorito(piezaId);
+        favIds.delete(piezaId);
+      } else {
+        await agregarFavorito(piezaId);
+        favIds.add(piezaId);
+      }
+      marcarFavoritos();
+    } catch (err) {
+      console.warn("[Joyería DC] favorito:", err && err.message);
+    }
+    heart.disabled = false;
+  });
+
+  onCambioSesion(function (session) { pintarSesion(session); });
+  sesionActual().then(pintarSesion);
 }
 
 if (document.readyState === "loading") {

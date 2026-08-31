@@ -99,4 +99,11 @@ create trigger piezas_touch_updated_at
   before update on public.piezas
   for each row execute function public.touch_updated_at();
 
--- favoritos (Fase 6) se creará solo si se aprueba esa fase.
+-- Fase 6 — favoritos de cliente (migración fase6_favoritos)
+create table public.favoritos (
+  usuario_id uuid not null references auth.users(id) on delete cascade,
+  pieza_id   uuid not null references public.piezas(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (usuario_id, pieza_id)
+);
+create index favoritos_usuario_idx on public.favoritos(usuario_id);

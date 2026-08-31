@@ -15,3 +15,10 @@ as $$
 $$;
 
 grant execute on function public.resumen_calificaciones() to anon, authenticated;
+
+-- Fase 4 — índice para el listado de cotizaciones (migración fase4_cotizaciones_index)
+-- create index cotizaciones_created_idx on public.cotizaciones (created_at desc);
+
+-- Fase 5 — seed de contenido_sitio: ver migración fase5_seed_contenido
+--   (20 claves con el texto que estaba en index.html; hero_titulo usa
+--    convención *x*->em y \n->br que interpreta assets/contenido.js)

@@ -148,3 +148,14 @@
   .admin-user{ width:100%; margin-left:0; }
   .admin-row{ flex-wrap:wrap; }
 }
+
+/* ---- textos del sitio (Fase 5) ---- */
+.admin-textos{ display:flex; flex-direction:column; gap:18px; }
+.admin-textos-grupo{
+  border:1px solid var(--hair, rgba(74,54,46,.14)); border-radius:14px; padding:16px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.admin-textos-grupo legend{
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.72rem;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--gold-strong, #9C7548); padding:0 6px;
+}

@@ -41,8 +41,8 @@
         <button class="admin-tab is-active" data-tab="piezas">Piezas</button>
         <button class="admin-tab" data-tab="categorias">Categorías</button>
         <button class="admin-tab" data-tab="sugerencias">Sugerencias</button>
-        <span class="admin-tab is-soon" title="Próxima fase">Cotizaciones</span>
-        <span class="admin-tab is-soon" title="Próxima fase">Textos</span>
+        <button class="admin-tab" data-tab="cotizaciones">Cotizaciones</button>
+        <button class="admin-tab" data-tab="textos">Textos</button>
       </nav>
       <div class="admin-user">
         <span id="whoami" class="admin-mono"></span>
@@ -80,6 +80,26 @@
         </div>
         <h3 class="admin-sub">Sugerencias recibidas</h3>
         <div id="sugList" class="admin-list"></div>
+      </section>
+
+      <section id="tab-cotizaciones" class="admin-tabpane" hidden>
+        <div class="admin-pane-head"><h2>Cotizaciones</h2></div>
+        <div id="cotizResumen" class="admin-resumen">
+          <div><strong id="cotizTotal">—</strong><span>clics en total</span></div>
+          <div><strong id="cotiz30">—</strong><span>últimos 30 días</span></div>
+        </div>
+        <h3 class="admin-sub">Piezas / secciones más cotizadas</h3>
+        <div id="cotizRanking" class="admin-list"></div>
+        <h3 class="admin-sub">Últimos clics</h3>
+        <div id="cotizLog" class="admin-list"></div>
+      </section>
+
+      <section id="tab-textos" class="admin-tabpane" hidden>
+        <div class="admin-pane-head">
+          <h2>Textos del sitio</h2>
+          <button id="guardarTextosBtn" class="btn btn-fill btn-sm">Guardar cambios</button>
+        </div>
+        <form id="textosForm" class="admin-textos"></form>
       </section>
     </main>
   </div>

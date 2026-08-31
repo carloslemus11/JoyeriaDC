@@ -89,3 +89,8 @@ create policy cotizaciones_admin_select on public.cotizaciones
 -- ---------- Perfiles ----------
 create policy perfiles_admin_todo on public.perfiles
   for all using (private.is_admin()) with check (private.is_admin());
+
+-- ---------- Favoritos (Fase 6): cada quien gestiona solo los suyos ----------
+alter table public.favoritos enable row level security;
+create policy favoritos_propios on public.favoritos
+  for all using (usuario_id = auth.uid()) with check (usuario_id = auth.uid());
