@@ -34,11 +34,12 @@ async function routeFromSession(session, { fromLogin } = {}) {
     show("panel");
     initPanel();
   } else {
-    await sb.auth.signOut();
+    // Sesión válida pero sin rol admin (p. ej. una cuenta de cliente).
+    // Solo cerramos sesión si el intento vino del formulario de este panel;
+    // si solo estaba navegando, no le tumbamos su sesión de cliente.
+    if (fromLogin) await sb.auth.signOut();
     show("login");
-    loginError(fromLogin
-      ? "Esta cuenta no tiene acceso al panel."
-      : "Tu sesión ya no tiene acceso. Inicia sesión de nuevo.");
+    loginError("Esta cuenta no tiene acceso al panel de administración.");
   }
 }
 
