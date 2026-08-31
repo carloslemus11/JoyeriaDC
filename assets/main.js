@@ -1,6 +1,10 @@
 /* Joyería DC — script principal del sitio público. */
 import { healthcheck } from "./supabase-client.js";
 import { getCategorias, getPiezas, fotoUrl } from "./catalogo.js";
+import {
+  getResumenCalificaciones, enviarCalificacion,
+  getSugerenciasAprobadas, enviarSugerencia,
+} from "./interacciones.js";
 
 healthcheck();
 
@@ -191,42 +195,43 @@ function initSitio() {
   cargarCatalogo();
 }
 
-/* ---------- ratings (versión local; se conecta a Supabase en la Fase 3) ---------- */
+var STAR_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg>';
+
+function fmtFecha(iso) {
+  var d = iso ? new Date(iso) : new Date();
+  return d.toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" });
+}
+
+/* ---------- calificaciones (Supabase) ---------- */
 function initRatings() {
-  var STAR_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg>';
-  var ratingLog = document.getElementById("ratingLog");
   var avgScore = document.getElementById("avgScore");
   var avgStars = document.getElementById("avgStars");
   var ratingCount = document.getElementById("ratingCount");
   var starButtons = Array.prototype.slice.call(document.querySelectorAll("#starsInput .star-btn"));
   var ratingThanks = document.getElementById("ratingThanks");
-  if (!ratingLog || !avgStars) return;
+  var ratingError = document.getElementById("ratingError");
+  if (!avgStars || !starButtons.length) return;
 
   function renderAvgStars(avg) {
     avgStars.innerHTML = "";
     for (var i = 1; i <= 5; i++) {
       var span = document.createElement("span");
-      span.style.color = i <= Math.round(avg) ? "var(--gold)" : "var(--star-off)";
+      span.style.color = i <= Math.round(avg || 0) ? "var(--gold)" : "var(--star-off)";
       span.style.width = "20px"; span.style.height = "20px"; span.style.display = "inline-flex";
       span.innerHTML = STAR_SVG;
       avgStars.appendChild(span);
     }
   }
-  function recomputeRatings() {
-    var entries = ratingLog.querySelectorAll(".rating-entry");
-    var count = entries.length;
-    if (!count) {
+  function pintarResumen(promedio, total) {
+    if (!total) {
       avgScore.textContent = "—";
       ratingCount.textContent = "Sé el primero en calificar";
       renderAvgStars(0);
       return;
     }
-    var sum = 0;
-    entries.forEach(function (li) { sum += parseInt(li.getAttribute("data-value"), 10) || 0; });
-    var avg = sum / count;
-    avgScore.textContent = avg.toFixed(1);
-    ratingCount.textContent = count === 1 ? "1 reseña" : (count + " reseñas");
-    renderAvgStars(avg);
+    avgScore.textContent = Number(promedio).toFixed(1);
+    ratingCount.textContent = total === 1 ? "1 reseña" : (total + " reseñas");
+    renderAvgStars(promedio);
   }
   function paintStarButtons(value) {
     starButtons.forEach(function (btn) {
@@ -235,65 +240,101 @@ function initRatings() {
       btn.setAttribute("aria-checked", on ? "true" : "false");
     });
   }
-  var alreadyRated = false;
-  try { alreadyRated = localStorage.getItem("dc_rated") === "1"; } catch (e) {}
-  if (alreadyRated && ratingThanks) ratingThanks.hidden = false;
+  async function refrescarResumen() {
+    try {
+      var r = await getResumenCalificaciones();
+      pintarResumen(r.promedio, r.total);
+    } catch (e) {
+      console.warn("[Joyería DC] resumen de calificaciones:", e && e.message);
+      pintarResumen(null, 0);
+    }
+  }
+
+  var yaCalifico = false;
+  try { yaCalifico = localStorage.getItem("dc_rated") === "1"; } catch (e) {}
+  if (yaCalifico && ratingThanks) ratingThanks.hidden = false;
 
   starButtons.forEach(function (btn) {
-    btn.addEventListener("click", function () {
+    btn.addEventListener("click", async function () {
       var value = parseInt(btn.getAttribute("data-value"), 10);
+      if (ratingError) ratingError.hidden = true;
       paintStarButtons(value);
-      var li = document.createElement("li");
-      li.className = "rating-entry";
-      li.setAttribute("data-value", String(value));
-      var meta = document.createElement("span");
-      meta.textContent = new Date().toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" });
-      li.appendChild(meta);
-      ratingLog.appendChild(li);
-      recomputeRatings();
-      if (ratingThanks) ratingThanks.hidden = false;
-      try { localStorage.setItem("dc_rated", "1"); } catch (e) {}
+      if (yaCalifico) { if (ratingThanks) ratingThanks.hidden = false; return; }
+      starButtons.forEach(function (b) { b.disabled = true; });
+      try {
+        await enviarCalificacion(value);
+        yaCalifico = true;
+        try { localStorage.setItem("dc_rated", "1"); } catch (e) {}
+        if (ratingThanks) ratingThanks.hidden = false;
+        await refrescarResumen();
+      } catch (e) {
+        console.warn("[Joyería DC] enviar calificación:", e && e.message);
+        if (ratingError) ratingError.hidden = false;
+        paintStarButtons(0);
+        starButtons.forEach(function (b) { b.disabled = false; });
+      }
     });
   });
-  recomputeRatings();
+
+  refrescarResumen();
 }
 
-/* ---------- suggestions (versión local; se conecta a Supabase en la Fase 3) ---------- */
+/* ---------- sugerencias (Supabase, con moderación previa) ---------- */
 function initSuggestions() {
   var suggForm = document.getElementById("suggForm");
   var suggList = document.getElementById("suggList");
   var suggEmpty = document.getElementById("suggEmpty");
   var suggThanks = document.getElementById("suggThanks");
+  var suggError = document.getElementById("suggError");
   if (!suggForm || !suggList) return;
 
-  function refreshSuggEmpty() {
-    var hasEntries = suggList.querySelectorAll(".sugg-entry").length > 0;
-    if (suggEmpty) suggEmpty.hidden = hasEntries;
+  async function cargarLista() {
+    try {
+      var items = await getSugerenciasAprobadas();
+      suggList.querySelectorAll(".sugg-entry").forEach(function (n) { n.remove(); });
+      items.forEach(function (s) {
+        var li = document.createElement("li");
+        li.className = "sugg-entry";
+        var t = document.createElement("span");
+        t.className = "sugg-text";
+        t.textContent = s.texto;
+        var m = document.createElement("span");
+        m.className = "sugg-meta";
+        m.textContent = (s.nombre || "Anónimo") + " · " + fmtFecha(s.created_at);
+        li.appendChild(t); li.appendChild(m);
+        suggList.appendChild(li);
+      });
+      if (suggEmpty) suggEmpty.hidden = items.length > 0;
+    } catch (e) {
+      console.warn("[Joyería DC] cargar sugerencias:", e && e.message);
+      if (suggEmpty) suggEmpty.hidden = false;
+    }
   }
-  suggForm.addEventListener("submit", function (e) {
+
+  suggForm.addEventListener("submit", async function (e) {
     e.preventDefault();
     var textEl = document.getElementById("suggText");
     var nameEl = document.getElementById("suggName");
-    var text = (textEl.value || "").trim();
-    if (!text) return;
-    var name = (nameEl.value || "").trim() || "Anónimo";
-    var li = document.createElement("li");
-    li.className = "sugg-entry";
-    var span1 = document.createElement("span");
-    span1.className = "sugg-text";
-    span1.textContent = text;
-    var span2 = document.createElement("span");
-    span2.className = "sugg-meta";
-    span2.textContent = name + " · " + new Date().toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" });
-    li.appendChild(span1);
-    li.appendChild(span2);
-    suggList.appendChild(li);
-    if (suggEmpty) suggEmpty.hidden = true;
-    textEl.value = "";
-    nameEl.value = "";
-    if (suggThanks) suggThanks.hidden = false;
+    var texto = (textEl.value || "").trim();
+    if (!texto) return;
+    var nombre = (nameEl.value || "").trim();
+    if (suggError) suggError.hidden = true;
+    var submitBtn = suggForm.querySelector('button[type="submit"], [type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+      await enviarSugerencia({ nombre: nombre, texto: texto });
+      textEl.value = "";
+      nameEl.value = "";
+      if (suggThanks) suggThanks.hidden = false;
+    } catch (err) {
+      console.warn("[Joyería DC] enviar sugerencia:", err && err.message);
+      if (suggError) suggError.hidden = false;
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
   });
-  refreshSuggEmpty();
+
+  cargarLista();
 }
 
 if (document.readyState === "loading") {

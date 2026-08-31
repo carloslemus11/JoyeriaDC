@@ -82,14 +82,16 @@ sb.auth.onAuthStateChange((event) => {
 /* ================================================================= */
 let panelReady = false;
 function initPanel() {
-  if (panelReady) { refreshPiezas(); refreshCategorias(); return; }
+  if (panelReady) { refreshPiezas(); refreshCategorias(); refreshSugerencias(); return; }
   panelReady = true;
 
-  document.querySelectorAll(".admin-tab[data-tab]").forEach((b) => {
+  const tabs = [...document.querySelectorAll(".admin-tab[data-tab]")];
+  const panes = ["piezas", "categorias", "sugerencias"];
+  tabs.forEach((b) => {
     b.addEventListener("click", () => {
-      document.querySelectorAll(".admin-tab[data-tab]").forEach((x) => x.classList.toggle("is-active", x === b));
-      $("tab-piezas").hidden = b.dataset.tab !== "piezas";
-      $("tab-categorias").hidden = b.dataset.tab !== "categorias";
+      tabs.forEach((x) => x.classList.toggle("is-active", x === b));
+      panes.forEach((p) => { $("tab-" + p).hidden = b.dataset.tab !== p; });
+      if (b.dataset.tab === "sugerencias") refreshSugerencias();
     });
   });
 
@@ -102,6 +104,57 @@ function initPanel() {
   refreshCategorias();
   refreshPiezas();
   checkBucketVacio();
+}
+
+/* ---------- reseñas y sugerencias ---------- */
+async function refreshSugerencias() {
+  // resumen de calificaciones
+  const res = await sb.rpc("resumen_calificaciones");
+  if (!res.error) {
+    const r = Array.isArray(res.data) ? res.data[0] : res.data;
+    $("resenasProm").textContent = r && r.promedio != null ? Number(r.promedio).toFixed(1) : "—";
+    $("resenasTotal").textContent = r && r.total != null ? r.total : "0";
+  }
+
+  const { data, error } = await sb
+    .from("sugerencias")
+    .select("*")
+    .order("created_at", { ascending: false });
+  const list = $("sugList");
+  list.innerHTML = "";
+  if (error) { list.innerHTML = `<p class="admin-empty">No se pudieron cargar: ${esc(error.message)}</p>`; return; }
+  if (!data.length) { list.innerHTML = '<p class="admin-empty">Aún no hay sugerencias.</p>'; return; }
+
+  const etiqueta = { pendiente: "Pendiente", aprobada: "Publicada", oculta: "Oculta" };
+  data.forEach((s) => {
+    const row = document.createElement("div");
+    row.className = "admin-row" + (s.estado === "aprobada" ? "" : " is-inactive");
+    row.innerHTML = `
+      <div class="admin-row-main">
+        <strong>${esc(s.nombre || "Anónimo")} <span class="admin-badge">${etiqueta[s.estado] || s.estado}</span></strong>
+        <span class="admin-row-sub">${esc(s.texto)}</span>
+        <span class="admin-mono">${new Date(s.created_at).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" })}</span>
+      </div>
+      <div class="admin-row-actions"></div>`;
+    const acts = row.querySelector(".admin-row-actions");
+    if (s.estado !== "aprobada") acts.appendChild(btn("Aprobar", () => moderarSugerencia(s, "aprobada")));
+    if (s.estado !== "oculta") acts.appendChild(btn("Ocultar", () => moderarSugerencia(s, "oculta")));
+    acts.appendChild(btn("Borrar", () => borrarSugerencia(s), "danger"));
+    list.appendChild(row);
+  });
+}
+
+async function moderarSugerencia(s, estado) {
+  const { error } = await sb.from("sugerencias").update({ estado }).eq("id", s.id);
+  if (error) { toast("No se pudo: " + error.message, "err"); return; }
+  toast(estado === "aprobada" ? "Sugerencia publicada." : "Sugerencia oculta.");
+  refreshSugerencias();
+}
+async function borrarSugerencia(s) {
+  if (!(await confirmar("Borrar esta sugerencia. Es permanente.", { danger: true, ok: "Borrar" }))) return;
+  const { error } = await sb.from("sugerencias").delete().eq("id", s.id);
+  if (error) { toast("No se pudo borrar: " + error.message, "err"); return; }
+  toast("Sugerencia borrada."); refreshSugerencias();
 }
 
 let categoriasCache = [];

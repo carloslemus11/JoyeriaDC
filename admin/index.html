@@ -40,7 +40,7 @@
       <nav class="admin-nav">
         <button class="admin-tab is-active" data-tab="piezas">Piezas</button>
         <button class="admin-tab" data-tab="categorias">Categorías</button>
-        <span class="admin-tab is-soon" title="Próxima fase">Sugerencias</span>
+        <button class="admin-tab" data-tab="sugerencias">Sugerencias</button>
         <span class="admin-tab is-soon" title="Próxima fase">Cotizaciones</span>
         <span class="admin-tab is-soon" title="Próxima fase">Textos</span>
       </nav>
@@ -70,6 +70,16 @@
           <button id="nuevaCatBtn" class="btn btn-fill btn-sm">Nueva categoría</button>
         </div>
         <div id="catList" class="admin-list"></div>
+      </section>
+
+      <section id="tab-sugerencias" class="admin-tabpane" hidden>
+        <div class="admin-pane-head"><h2>Reseñas y sugerencias</h2></div>
+        <div id="resumenResenas" class="admin-resumen">
+          <div><strong id="resenasProm">—</strong><span>promedio</span></div>
+          <div><strong id="resenasTotal">—</strong><span>calificaciones</span></div>
+        </div>
+        <h3 class="admin-sub">Sugerencias recibidas</h3>
+        <div id="sugList" class="admin-list"></div>
       </section>
     </main>
   </div>

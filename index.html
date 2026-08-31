@@ -125,16 +125,16 @@
           <p class="eyebrow">Reseñas</p>
           <h2 style="font-size:clamp(28px,3.4vw,42px)">Califica tu experiencia.</h2>
         </div>
-        <p class="lede">Tu calificación queda registrada en esta misma página y nos ayuda a mejorar.</p>
+        <p class="lede">Tu calificación nos ayuda a mejorar.</p>
       </div>
 
       <div class="rating-panel reveal">
-        <div class="rating-summary" artifact-local>
+        <div class="rating-summary">
           <span class="avg-score" id="avgScore">—</span>
           <div class="avg-stars" id="avgStars" aria-hidden="true"></div>
           <span class="rating-count" id="ratingCount">Sé el primero en calificar</span>
         </div>
-        <div class="rating-input" artifact-local>
+        <div class="rating-input">
           <p class="lede">¿Cómo fue tu experiencia con Joyería DC?</p>
           <div class="stars-input" id="starsInput" role="radiogroup" aria-label="Calificar servicio de 1 a 5 estrellas">
             <button type="button" class="star-btn" data-value="1" aria-label="1 estrella" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg></button>
@@ -144,9 +144,9 @@
             <button type="button" class="star-btn" data-value="5" aria-label="5 estrellas" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01z"/></svg></button>
           </div>
           <p class="rating-thanks" id="ratingThanks" hidden>Gracias por calificarnos — tu voto ya quedó registrado.</p>
+          <p class="rating-thanks" id="ratingError" hidden style="color:#B3261E;">No se pudo registrar tu calificación. Intenta de nuevo.</p>
         </div>
       </div>
-      <ul id="ratingLog" class="visually-hidden"></ul>
     </div>
   </section>
 
@@ -161,7 +161,7 @@
       </div>
 
       <div class="sugg-panel reveal">
-        <form class="sugg-form" id="suggForm" artifact-local>
+        <form class="sugg-form" id="suggForm">
           <div class="field">
             <label for="suggName">Nombre (opcional)</label>
             <input type="text" id="suggName" name="suggName" placeholder="¿Cómo te llamas?" maxlength="40">
@@ -171,7 +171,8 @@
             <textarea id="suggText" name="suggText" rows="4" maxlength="280" placeholder="Cuéntanos tu idea o sugerencia..." required></textarea>
           </div>
           <button type="submit" class="btn btn-fill" style="align-self:flex-start;">Enviar sugerencia</button>
-          <p class="sugg-thanks" id="suggThanks" hidden>¡Gracias! Tu sugerencia quedó registrada.</p>
+          <p class="sugg-thanks" id="suggThanks" hidden>¡Gracias! Tu sugerencia se publicará cuando la revisemos.</p>
+          <p class="sugg-thanks" id="suggError" hidden style="color:#B3261E;">No se pudo enviar tu sugerencia. Intenta de nuevo.</p>
         </form>
 
         <ul class="sugg-list" id="suggList">

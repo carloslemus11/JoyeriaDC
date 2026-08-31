@@ -18,7 +18,10 @@ JOYERIA.DC./
 │   ├── styles.css                      # Todo el CSS (incluye las texturas de seda en base64)
 │   ├── main.js                         # JS del sitio público (módulo ES). Antes era el <script> inline
 │   ├── config.js                       # SUPABASE_URL + publishable key + WA_NUMBER (público por diseño, SÍ se versiona)
-│   └── supabase-client.js              # Cliente Supabase compartido (sitio + admin) + healthcheck
+│   ├── supabase-client.js              # Cliente Supabase compartido (sitio + admin) + healthcheck
+│   ├── catalogo.js                     # Lectura del catálogo (categorías/piezas/fotoUrl) — Fase 2
+│   ├── interacciones.js                # Calificaciones y sugerencias — Fase 3
+│   └── piezas/                         # Respaldo de las 9 fotos (ya en Storage; no se sirven)
 ├── admin/
 │   ├── index.html                      # Panel de administración (Fase 1: solo login + placeholder)
 │   ├── admin.css
@@ -27,6 +30,8 @@ JOYERIA.DC./
 │   ├── schema.sql                      # Tablas (fuente de verdad del esquema; ya aplicado)
 │   ├── policies.sql                    # RLS + políticas + private.is_admin() (ya aplicado)
 │   ├── storage.sql                     # Bucket "piezas" + políticas de Storage (ya aplicado)
+│   ├── seed-catalogo.sql               # Seed de categorías/piezas/fotos (Fase 2)
+│   ├── funciones.sql                   # resumen_calificaciones() (Fase 3)
 │   └── setup.md                        # Pasos de configuración; incluye los pendientes de Auth
 ├── docs/
 │   ├── specs/                           # Specs de desarrollo (los crea/actualiza el skill design-spec; no existe hasta el primero)
@@ -80,7 +85,7 @@ Plan completo en `docs/plans/2026-08-31-migracion-supabase.md`. Spec en `docs/sp
 - **Fase 1 — Fundación:** EN CURSO. Hecho: esquema + RLS + Storage + git + reestructura a multi-archivo + `assets/config.js`/`supabase-client.js` + shell de `/admin` con login + `netlify.toml`. Falta: pasos de Auth en el dashboard, primer deploy a Netlify, verificación.
 - **Fase 2 — Catálogo + panel admin:** HECHA y verificada (2026-08-31). Catálogo (4 cat + 9 piezas) en Supabase; `assets/catalogo.js` + `assets/main.js` lo renderizan en el sitio público. Panel `/admin` completo (`admin/admin.js` + `admin/admin.css`): login + gate de admin, tabs Piezas/Categorías, CRUD con modal, activar/desactivar, borrar con confirmación in-app, subir/reemplazar foto a Storage, botón "Importar fotos iniciales". Las 9 fotos ya están en el bucket `piezas/catalogo/*` y el sitio las sirve desde Storage. `assets/piezas/` quedó como respaldo (ya no se sirve; se puede borrar). Verificado en el navegador con la sesión admin real: CRUD OK, trigger `updated_at` OK, anon no puede escribir.
   - **Notas para futuras fases del panel:** (1) `admin.css` tiene `[hidden]{display:none!important}` porque `.admin-modal`/`.admin-shell` usan `display:flex`. (2) NO usar `window.confirm`/`alert`/`prompt` — devuelven false/nada en varios navegadores; usar `confirmar()` de `admin/admin.js`. (3) el panel usa un único `#modal` + `#modalForm` reutilizado por `openModal()` y `confirmar()`.
-- **Fase 3 — Reseñas y sugerencias en base de datos:** pendiente. Hoy el widget de estrellas y el form de sugerencias siguen en su versión local (no persisten).
+- **Fase 3 — Reseñas y sugerencias en base de datos:** HECHA y verificada (2026-08-31). Calificaciones y sugerencias persisten en Supabase; sugerencias con moderación previa (solo se publican las aprobadas desde `/admin`). Función `resumen_calificaciones()`. Nuevo módulo `assets/interacciones.js`. Panel: pestaña Sugerencias activa. Verificado en el navegador como anon y como admin (calificar, enviar sugerencia, aprobar → aparece en el sitio, ocultar, borrar; anon no puede autoaprobar).
 - **Fase 4 — Registro de cotizaciones:** pendiente.
 - **Fase 5 — Textos editables del sitio:** pendiente (tabla `contenido_sitio` ya existe, vacía).
 - **Fase 6 — Cuentas de clientes:** condicional, se decide al cerrar la Fase 5.
@@ -173,8 +178,8 @@ No existe un archivo de logo real (se buscó en Canva y en carpetas locales del 
 | Hero | `#top` | Titular, bajada, botones CTA, fila de stats (18K / seguidores IG / local), logo grande |
 | Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas — **ambas se cargan desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Cada pieza abre WhatsApp con su nombre. Estados de carga (shimmer) y de error (mensaje + WhatsApp) en `catalogo`. |
 | Atelier | `#atelier` | 3 bloques "por qué elegirnos" (oro 18K real, diseño con carácter, atención en Ibagué) |
-| Reseñas | `#resenas` | Widget de calificación de 1-5 estrellas, funcional |
-| Sugerencias | `#sugerencias` | Formulario de sugerencias + lista de sugerencias recibidas |
+| Reseñas | `#resenas` | Widget de calificación 1-5 estrellas → tabla `calificaciones`; muestra promedio + total reales |
+| Sugerencias | `#sugerencias` | Formulario → tabla `sugerencias` (pendiente); la lista pública solo muestra las aprobadas por el dueño |
 | Ubicación | `#ubicacion` | Dirección, WhatsApp, Instagram, botón "Cómo llegar" (Google Maps) |
 | Footer | — | Resumen de marca, links rápidos, contacto |
 | Botón flotante (FAB) | — | WhatsApp "servicio al cliente", fijo abajo a la derecha, visible en todo momento |
@@ -182,8 +187,8 @@ No existe un archivo de logo real (se buscó en Canva y en carpetas locales del 
 ## Funcionalidad / interactividad
 
 - **Botones de WhatsApp**: cualquier elemento con clase `wa-link` y atributo `data-wa-msg="..."` recibe automáticamente (vía JS al cargar) un `href` a `wa.me/12405933943?text=...` con ese mensaje. Así se arma cada botón de cotización/compra sin repetir el número a mano.
-- **Calificación de servicio**: 5 botones de estrella; al hacer clic, se agrega una entrada a una lista oculta (`#ratingLog`) y se recalcula el promedio mostrado. **Estado actual (post Fase 1):** todavía funciona en su versión local en `assets/main.js` — NO persiste en ningún lado (antes usaba la Artifact capability, que se dejó de usar al salir de Artifact; la tabla `calificaciones` de Supabase ya existe pero aún no está conectada). Se conecta a Supabase en la **Fase 3**.
-- **Sugerencias**: formulario (nombre opcional + texto) que agrega entradas a una lista visible; misma situación que las calificaciones — versión local, sin persistir, se conecta a Supabase (`sugerencias`, con moderación previa) en la **Fase 3**.
+- **Calificación de servicio** (Fase 3): 5 botones de estrella; al hacer clic se inserta en `public.calificaciones` (RLS: anon inserta 1-5) y se repinta el promedio con la función `public.resumen_calificaciones()` (RPC). Un flag `localStorage["dc_rated"]` evita repetir en el mismo dispositivo (riesgo aceptado, evadible). Lógica en `assets/main.js` (`initRatings`) + `assets/interacciones.js`. Ya no existe `#ratingLog`.
+- **Sugerencias** (Fase 3): formulario → `public.sugerencias` con `estado='pendiente'`. El sitio público solo lista las `estado='aprobada'` (RLS). El dueño modera en `/admin` → pestaña **Sugerencias** (Aprobar / Ocultar / Borrar) que además muestra el resumen de calificaciones. Lógica en `assets/main.js` (`initSuggestions`) + `assets/interacciones.js` + `admin/admin.js` (`refreshSugerencias`).
 - **Scroll-reveal**: `IntersectionObserver` agrega la clase `.is-visible` a elementos `.reveal` cuando entran en pantalla.
 - **Nav**: se vuelve translúcida/blur al hacer scroll; menú hamburguesa en móvil con `aria-expanded`.
 
