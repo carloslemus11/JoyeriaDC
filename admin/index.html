@@ -14,45 +14,76 @@
 </head>
 <body class="silk admin-body">
 
-  <main class="admin-shell">
+  <!-- Cargando -->
+  <section id="loadingView" class="admin-shell"><div class="admin-card"><p class="admin-mono">Cargando…</p></div></section>
 
-    <!-- Login -->
-    <section id="loginView" class="admin-card" hidden>
+  <!-- Login -->
+  <section id="loginView" class="admin-shell" hidden>
+    <div class="admin-card">
       <p class="admin-eyebrow">Joyería DC</p>
       <h1 class="admin-title">Panel de administración</h1>
       <form id="loginForm" class="admin-form" autocomplete="on">
-        <label class="admin-field">
-          <span>Correo</span>
-          <input type="email" id="email" name="email" required autocomplete="username">
-        </label>
-        <label class="admin-field">
-          <span>Contraseña</span>
-          <input type="password" id="password" name="password" required autocomplete="current-password">
-        </label>
+        <label class="admin-field"><span>Correo</span>
+          <input type="email" id="email" name="email" required autocomplete="username"></label>
+        <label class="admin-field"><span>Contraseña</span>
+          <input type="password" id="password" name="password" required autocomplete="current-password"></label>
         <button type="submit" id="loginBtn" class="btn btn-fill">Entrar</button>
         <p id="loginError" class="admin-error" role="alert" hidden></p>
       </form>
-    </section>
+    </div>
+  </section>
 
-    <!-- Panel (placeholder Fase 1) -->
-    <section id="panelView" class="admin-card" hidden>
-      <p class="admin-eyebrow">Sesión iniciada</p>
-      <h1 class="admin-title">Panel en construcción</h1>
-      <p class="admin-note">
-        La administración del catálogo, sugerencias, cotizaciones y textos
-        llega en las siguientes fases de la migración. Por ahora esto solo
-        confirma que el acceso funciona.
-      </p>
-      <p id="panelWho" class="admin-mono"></p>
-      <button type="button" id="logoutBtn" class="btn btn-ghost">Cerrar sesión</button>
-    </section>
+  <!-- Panel -->
+  <div id="panelView" hidden>
+    <header class="admin-topbar">
+      <div class="admin-brand">Joyería DC · Panel</div>
+      <nav class="admin-nav">
+        <button class="admin-tab is-active" data-tab="piezas">Piezas</button>
+        <button class="admin-tab" data-tab="categorias">Categorías</button>
+        <span class="admin-tab is-soon" title="Próxima fase">Sugerencias</span>
+        <span class="admin-tab is-soon" title="Próxima fase">Cotizaciones</span>
+        <span class="admin-tab is-soon" title="Próxima fase">Textos</span>
+      </nav>
+      <div class="admin-user">
+        <span id="whoami" class="admin-mono"></span>
+        <button id="logoutBtn" class="btn btn-ghost btn-sm">Salir</button>
+      </div>
+    </header>
 
-    <!-- Cargando -->
-    <section id="loadingView" class="admin-card">
-      <p class="admin-mono">Cargando…</p>
-    </section>
+    <main class="admin-main">
+      <div id="globalMsg" class="admin-toast" hidden></div>
 
-  </main>
+      <section id="tab-piezas" class="admin-tabpane">
+        <div class="admin-pane-head">
+          <h2>Piezas</h2>
+          <div class="admin-pane-actions">
+            <button id="importFotosBtn" class="btn btn-ghost btn-sm" hidden>Importar fotos iniciales</button>
+            <button id="nuevaPiezaBtn" class="btn btn-fill btn-sm">Nueva pieza</button>
+          </div>
+        </div>
+        <div id="piezasList" class="admin-list"></div>
+      </section>
+
+      <section id="tab-categorias" class="admin-tabpane" hidden>
+        <div class="admin-pane-head">
+          <h2>Categorías</h2>
+          <button id="nuevaCatBtn" class="btn btn-fill btn-sm">Nueva categoría</button>
+        </div>
+        <div id="catList" class="admin-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal genérico -->
+  <div id="modal" class="admin-modal" hidden>
+    <div class="admin-modal-box">
+      <div class="admin-modal-head">
+        <h3 id="modalTitle">—</h3>
+        <button id="modalClose" class="admin-x" aria-label="Cerrar">×</button>
+      </div>
+      <form id="modalForm" class="admin-form"></form>
+    </div>
+  </div>
 
   <script type="module" src="admin.js"></script>
 </body>

@@ -1,100 +1,377 @@
-/* Joyería DC — panel /admin (Fase 1)
- * Solo valida el acceso: login por correo/contraseña contra Supabase Auth
- * y comprueba que el usuario tenga fila en public.perfiles con rol admin.
- */
+/* Joyería DC — panel /admin (Fase 2: login + CRUD de catálogo). */
 import { sb } from "../assets/supabase-client.js";
 
-const views = {
-  loading: document.getElementById("loadingView"),
-  login: document.getElementById("loginView"),
-  panel: document.getElementById("panelView"),
-};
-const loginForm = document.getElementById("loginForm");
-const loginBtn = document.getElementById("loginBtn");
-const loginError = document.getElementById("loginError");
-const logoutBtn = document.getElementById("logoutBtn");
-const panelWho = document.getElementById("panelWho");
+const cfg = window.JOYERIA_CONFIG || {};
+const $ = (id) => document.getElementById(id);
 
+const views = { loading: $("loadingView"), login: $("loginView"), panel: $("panelView") };
 function show(name) {
   Object.entries(views).forEach(([k, el]) => { el.hidden = k !== name; });
 }
 
-function showLoginError(msg) {
-  loginError.textContent = msg;
-  loginError.hidden = false;
+/* ---------- toast ---------- */
+let toastTimer = null;
+function toast(msg, kind = "ok") {
+  const t = $("globalMsg");
+  t.textContent = msg;
+  t.className = "admin-toast is-" + kind;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
 }
 
+/* ---------- auth ---------- */
 async function isAdmin(userId) {
-  const { data, error } = await sb
-    .from("perfiles")
-    .select("rol")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) return false;
-  return !!data && data.rol === "admin";
+  const { data, error } = await sb.from("perfiles").select("rol").eq("id", userId).maybeSingle();
+  return !error && !!data && data.rol === "admin";
 }
 
-async function enterPanelOrReject(session, { fromLogin } = {}) {
-  const user = session?.user;
+async function routeFromSession(session, { fromLogin } = {}) {
+  const user = session && session.user;
   if (!user) { show("login"); return; }
-
   if (await isAdmin(user.id)) {
-    panelWho.textContent = user.email || user.id;
+    $("whoami").textContent = user.email || user.id;
     show("panel");
+    initPanel();
   } else {
     await sb.auth.signOut();
     show("login");
-    if (fromLogin) {
-      showLoginError("Esta cuenta no tiene acceso al panel.");
-    } else {
-      showLoginError("Tu sesión ya no tiene acceso. Inicia sesión de nuevo.");
-    }
+    loginError(fromLogin
+      ? "Esta cuenta no tiene acceso al panel."
+      : "Tu sesión ya no tiene acceso. Inicia sesión de nuevo.");
   }
 }
 
-// Estado inicial
-(async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    await enterPanelOrReject(session);
-  } else {
-    show("login");
-  }
-})();
+function loginError(msg) {
+  const e = $("loginError");
+  if (!msg) { e.hidden = true; return; }
+  e.textContent = msg; e.hidden = false;
+}
 
-// Login
-loginForm.addEventListener("submit", async (e) => {
+$("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  loginError.hidden = true;
-  loginBtn.disabled = true;
-  loginBtn.textContent = "Entrando…";
-
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-
+  loginError(null);
+  const btn = $("loginBtn");
+  btn.disabled = true; btn.textContent = "Entrando…";
+  const email = $("email").value.trim();
+  const password = $("password").value;
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
-
-  loginBtn.disabled = false;
-  loginBtn.textContent = "Entrar";
-
-  if (error) {
-    showLoginError("Correo o contraseña incorrectos.");
-    return;
-  }
-  await enterPanelOrReject(data.session, { fromLogin: true });
+  btn.disabled = false; btn.textContent = "Entrar";
+  if (error) { loginError("Correo o contraseña incorrectos."); return; }
+  await routeFromSession(data.session, { fromLogin: true });
 });
 
-// Logout
-logoutBtn.addEventListener("click", async () => {
+$("logoutBtn").addEventListener("click", async () => {
   await sb.auth.signOut();
-  loginForm.reset();
-  loginError.hidden = true;
+  $("loginForm").reset();
+  loginError(null);
   show("login");
 });
 
-// Reaccionar a cambios de sesión (expiración, cierre en otra pestaña)
 sb.auth.onAuthStateChange((event) => {
-  if (event === "SIGNED_OUT") {
-    show("login");
-  }
+  if (event === "SIGNED_OUT") show("login");
 });
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  await routeFromSession(session);
+})();
+
+/* ================================================================= */
+/*  Panel                                                             */
+/* ================================================================= */
+let panelReady = false;
+function initPanel() {
+  if (panelReady) { refreshPiezas(); refreshCategorias(); return; }
+  panelReady = true;
+
+  document.querySelectorAll(".admin-tab[data-tab]").forEach((b) => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".admin-tab[data-tab]").forEach((x) => x.classList.toggle("is-active", x === b));
+      $("tab-piezas").hidden = b.dataset.tab !== "piezas";
+      $("tab-categorias").hidden = b.dataset.tab !== "categorias";
+    });
+  });
+
+  $("nuevaPiezaBtn").addEventListener("click", () => openPiezaForm(null));
+  $("nuevaCatBtn").addEventListener("click", () => openCatForm(null));
+  $("importFotosBtn").addEventListener("click", importarFotosIniciales);
+  $("modalClose").addEventListener("click", closeModal);
+  $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) closeModal(); });
+
+  refreshCategorias();
+  refreshPiezas();
+  checkBucketVacio();
+}
+
+let categoriasCache = [];
+
+async function refreshCategorias() {
+  const { data, error } = await sb.from("categorias").select("*").order("orden");
+  if (error) { toast("No se pudieron cargar las categorías: " + error.message, "err"); return; }
+  categoriasCache = data || [];
+  const list = $("catList");
+  list.innerHTML = "";
+  if (!categoriasCache.length) {
+    list.innerHTML = '<p class="admin-empty">Aún no hay categorías. Crea la primera.</p>';
+    return;
+  }
+  categoriasCache.forEach((c) => {
+    const row = document.createElement("div");
+    row.className = "admin-row" + (c.activa ? "" : " is-inactive");
+    row.innerHTML = `
+      <div class="admin-row-main">
+        <strong>${esc(c.nombre)}</strong>
+        <span class="admin-mono">/${esc(c.slug)} · orden ${c.orden}${c.activa ? "" : " · inactiva"}</span>
+        ${c.descripcion ? `<span class="admin-row-sub">${esc(c.descripcion)}</span>` : ""}
+      </div>
+      <div class="admin-row-actions"></div>`;
+    const acts = row.querySelector(".admin-row-actions");
+    acts.appendChild(btn("Editar", () => openCatForm(c)));
+    acts.appendChild(btn(c.activa ? "Desactivar" : "Activar", () => toggleActiva("categorias", c)));
+    acts.appendChild(btn("Borrar", () => borrarCategoria(c), "danger"));
+    list.appendChild(row);
+  });
+}
+
+async function refreshPiezas() {
+  const { data, error } = await sb
+    .from("piezas")
+    .select("*, categorias(nombre), pieza_fotos(id, storage_path, alt, orden)")
+    .order("orden");
+  if (error) { toast("No se pudieron cargar las piezas: " + error.message, "err"); return; }
+  const list = $("piezasList");
+  list.innerHTML = "";
+  if (!data || !data.length) {
+    list.innerHTML = '<p class="admin-empty">Aún no hay piezas. Crea la primera.</p>';
+    return;
+  }
+  data.forEach((p) => {
+    const foto = (p.pieza_fotos || []).slice().sort((a, b) => a.orden - b.orden)[0];
+    const row = document.createElement("div");
+    row.className = "admin-row" + (p.activa ? "" : " is-inactive");
+    row.innerHTML = `
+      <div class="admin-thumb">${foto ? `<img src="${fotoSrc(foto.storage_path)}" alt="">` : '<span>—</span>'}</div>
+      <div class="admin-row-main">
+        <strong>${esc(p.nombre)}</strong>
+        <span class="admin-mono">${p.categorias ? esc(p.categorias.nombre) : "sin categoría"} · orden ${p.orden}${p.activa ? "" : " · inactiva"}</span>
+        ${p.descripcion ? `<span class="admin-row-sub">${esc(p.descripcion)}</span>` : ""}
+      </div>
+      <div class="admin-row-actions"></div>`;
+    const acts = row.querySelector(".admin-row-actions");
+    acts.appendChild(btn("Editar", () => openPiezaForm(p)));
+    acts.appendChild(btn("Foto", () => openFotoForm(p, foto)));
+    acts.appendChild(btn(p.activa ? "Desactivar" : "Activar", () => toggleActiva("piezas", p)));
+    acts.appendChild(btn("Borrar", () => borrarPieza(p), "danger"));
+    list.appendChild(row);
+  });
+}
+
+/* ---------- formularios (modal) ---------- */
+function openModal(title, fieldsHtml, onSubmit) {
+  $("modalTitle").textContent = title;
+  const form = $("modalForm");
+  form.innerHTML = fieldsHtml + `
+    <div class="admin-form-actions">
+      <button type="button" class="btn btn-ghost btn-sm" data-cancel>Cancelar</button>
+      <button type="submit" class="btn btn-fill btn-sm">Guardar</button>
+    </div>`;
+  form.querySelector("[data-cancel]").addEventListener("click", closeModal);
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const sb2 = form.querySelector('button[type="submit"]');
+    sb2.disabled = true; sb2.textContent = "Guardando…";
+    try {
+      await onSubmit(new FormData(form));
+      closeModal();
+    } catch (err) {
+      toast("No se pudo guardar: " + (err.message || err), "err");
+      sb2.disabled = false; sb2.textContent = "Guardar";
+    }
+  };
+  $("modal").hidden = false;
+}
+function closeModal() { $("modal").hidden = true; $("modalForm").innerHTML = ""; }
+
+function field(label, name, value, opts = {}) {
+  const v = value == null ? "" : String(value);
+  if (opts.type === "textarea")
+    return `<label class="admin-field"><span>${label}</span><textarea name="${name}" rows="3">${esc(v)}</textarea></label>`;
+  if (opts.type === "checkbox")
+    return `<label class="admin-check"><input type="checkbox" name="${name}" ${value ? "checked" : ""}><span>${label}</span></label>`;
+  if (opts.type === "select")
+    return `<label class="admin-field"><span>${label}</span><select name="${name}">${opts.options.map(o =>
+      `<option value="${esc(o.value)}" ${String(o.value) === v ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select></label>`;
+  return `<label class="admin-field"><span>${label}</span><input type="${opts.type || "text"}" name="${name}" value="${esc(v)}" ${opts.required ? "required" : ""}></label>`;
+}
+
+function openCatForm(c) {
+  const isNew = !c;
+  openModal(isNew ? "Nueva categoría" : "Editar categoría",
+    field("Nombre", "nombre", c?.nombre, { required: true }) +
+    field("Slug (URL, sin espacios)", "slug", c?.slug, { required: true }) +
+    field("Descripción", "descripcion", c?.descripcion, { type: "textarea" }) +
+    field("Texto del botón", "cta_label", c?.cta_label) +
+    field("Mensaje de WhatsApp del botón", "cta_msg", c?.cta_msg, { type: "textarea" }) +
+    field("Orden", "orden", c?.orden ?? nextOrden(categoriasCache), { type: "number" }) +
+    field("Activa", "activa", c ? c.activa : true, { type: "checkbox" }),
+    async (fd) => {
+      const payload = {
+        nombre: fd.get("nombre").trim(),
+        slug: fd.get("slug").trim().toLowerCase().replace(/\s+/g, "-"),
+        descripcion: emptyNull(fd.get("descripcion")),
+        cta_label: emptyNull(fd.get("cta_label")),
+        cta_msg: emptyNull(fd.get("cta_msg")),
+        orden: parseInt(fd.get("orden"), 10) || 0,
+        activa: fd.get("activa") === "on",
+      };
+      const q = isNew
+        ? sb.from("categorias").insert(payload)
+        : sb.from("categorias").update(payload).eq("id", c.id);
+      const { error } = await q;
+      if (error) throw error;
+      toast(isNew ? "Categoría creada." : "Categoría actualizada.");
+      refreshCategorias();
+    });
+}
+
+function openPiezaForm(p) {
+  const isNew = !p;
+  openModal(isNew ? "Nueva pieza" : "Editar pieza",
+    field("Nombre", "nombre", p?.nombre, { required: true }) +
+    field("Categoría", "categoria_id", p?.categoria_id, {
+      type: "select",
+      options: [{ value: "", label: "— sin categoría —" }].concat(
+        categoriasCache.map((c) => ({ value: c.id, label: c.nombre }))),
+    }) +
+    field("Descripción", "descripcion", p?.descripcion, { type: "textarea" }) +
+    field("Orden", "orden", p?.orden ?? 100, { type: "number" }) +
+    field("Activa", "activa", p ? p.activa : true, { type: "checkbox" }),
+    async (fd) => {
+      const payload = {
+        nombre: fd.get("nombre").trim(),
+        categoria_id: fd.get("categoria_id") || null,
+        descripcion: emptyNull(fd.get("descripcion")),
+        orden: parseInt(fd.get("orden"), 10) || 0,
+        activa: fd.get("activa") === "on",
+      };
+      const q = isNew
+        ? sb.from("piezas").insert(payload)
+        : sb.from("piezas").update(payload).eq("id", p.id);
+      const { error } = await q;
+      if (error) throw error;
+      toast(isNew ? "Pieza creada." : "Pieza actualizada.");
+      refreshPiezas();
+    });
+}
+
+function openFotoForm(p, foto) {
+  openModal("Foto de « " + p.nombre + " »",
+    (foto ? `<div class="admin-thumb admin-thumb-lg"><img src="${fotoSrc(foto.storage_path)}" alt=""></div>` : "") +
+    `<label class="admin-field"><span>Nueva foto (JPG, PNG o WebP · máx 5 MB)</span>
+       <input type="file" name="archivo" accept="image/jpeg,image/png,image/webp"></label>` +
+    field("Texto alternativo", "alt", foto?.alt || p.nombre),
+    async (fd) => {
+      const file = fd.get("archivo");
+      const alt = emptyNull(fd.get("alt"));
+      if (file && file.size) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
+          throw new Error("Formato no soportado.");
+        if (file.size > 5 * 1024 * 1024) throw new Error("La foto supera los 5 MB.");
+        const ext = file.name.split(".").pop().toLowerCase();
+        const path = `catalogo/${p.id}-${Date.now()}.${ext}`;
+        const up = await sb.storage.from("piezas").upload(path, file, { upsert: true, contentType: file.type });
+        if (up.error) throw up.error;
+        if (foto) {
+          const { error } = await sb.from("pieza_fotos").update({ storage_path: path, alt }).eq("id", foto.id);
+          if (error) throw error;
+        } else {
+          const { error } = await sb.from("pieza_fotos").insert({ pieza_id: p.id, storage_path: path, alt, orden: 0 });
+          if (error) throw error;
+        }
+        toast("Foto actualizada.");
+      } else if (foto && alt !== foto.alt) {
+        const { error } = await sb.from("pieza_fotos").update({ alt }).eq("id", foto.id);
+        if (error) throw error;
+        toast("Texto alternativo actualizado.");
+      }
+      refreshPiezas();
+      checkBucketVacio();
+    });
+}
+
+/* ---------- acciones sueltas ---------- */
+async function toggleActiva(tabla, row) {
+  const { error } = await sb.from(tabla).update({ activa: !row.activa }).eq("id", row.id);
+  if (error) { toast("No se pudo cambiar: " + error.message, "err"); return; }
+  tabla === "piezas" ? refreshPiezas() : refreshCategorias();
+}
+async function borrarCategoria(c) {
+  if (!confirm(`Borrar la categoría « ${c.nombre} ». Es permanente. Las piezas quedan sin categoría, no se borran.`)) return;
+  const { error } = await sb.from("categorias").delete().eq("id", c.id);
+  if (error) { toast("No se pudo borrar: " + error.message, "err"); return; }
+  toast("Categoría borrada."); refreshCategorias(); refreshPiezas();
+}
+async function borrarPieza(p) {
+  if (!confirm(`Borrar la pieza « ${p.nombre} ». Es permanente (no hay papelera). Considera desactivarla en su lugar.`)) return;
+  const { error } = await sb.from("piezas").delete().eq("id", p.id);
+  if (error) { toast("No se pudo borrar: " + error.message, "err"); return; }
+  toast("Pieza borrada."); refreshPiezas();
+}
+
+/* ---------- importar fotos iniciales a Storage ---------- */
+async function checkBucketVacio() {
+  const { data, error } = await sb.storage.from("piezas").list("catalogo", { limit: 1 });
+  const { count } = await sb.from("pieza_fotos")
+    .select("id", { count: "exact", head: true })
+    .like("storage_path", "assets/piezas/%");
+  const pendientes = count || 0;
+  $("importFotosBtn").hidden = !(pendientes > 0 && (error || !data || data.length === 0));
+}
+
+async function importarFotosIniciales() {
+  if (!confirm("Subir las fotos del catálogo actual a Storage. Se hace una sola vez.")) return;
+  const btn = $("importFotosBtn");
+  btn.disabled = true; btn.textContent = "Importando…";
+  const { data: rows, error } = await sb.from("pieza_fotos").select("id, storage_path").like("storage_path", "assets/piezas/%");
+  if (error) { toast("Error: " + error.message, "err"); btn.disabled = false; btn.textContent = "Importar fotos iniciales"; return; }
+  let ok = 0, fail = 0;
+  for (const r of rows) {
+    try {
+      const base = r.storage_path.split("/").pop();
+      const res = await fetch("../assets/piezas/" + base);
+      if (!res.ok) throw new Error("no se encontró " + base);
+      const blob = await res.blob();
+      const dest = "catalogo/" + base;
+      const up = await sb.storage.from("piezas").upload(dest, blob, { upsert: true, contentType: blob.type || "image/jpeg" });
+      if (up.error) throw up.error;
+      const { error: uerr } = await sb.from("pieza_fotos").update({ storage_path: dest }).eq("id", r.id);
+      if (uerr) throw uerr;
+      ok++;
+    } catch (e) { fail++; console.warn("import", r.storage_path, e); }
+  }
+  btn.disabled = false; btn.textContent = "Importar fotos iniciales";
+  toast(`Importadas ${ok} foto(s)${fail ? `, ${fail} con error` : ""}.`, fail ? "err" : "ok");
+  refreshPiezas(); checkBucketVacio();
+}
+
+/* ---------- helpers ---------- */
+function btn(label, onClick, kind) {
+  const b = document.createElement("button");
+  b.className = "btn btn-ghost btn-sm" + (kind === "danger" ? " is-danger" : "");
+  b.textContent = label;
+  b.addEventListener("click", onClick);
+  return b;
+}
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+}
+function emptyNull(v) { v = (v || "").trim(); return v === "" ? null : v; }
+function nextOrden(arr) { return (arr.reduce((m, x) => Math.max(m, x.orden || 0), 0) || 0) + 1; }
+function fotoSrc(storagePath) {
+  if (!storagePath) return "";
+  if (/^https?:\/\//.test(storagePath)) return storagePath;
+  if (/^\/|^assets\//.test(storagePath)) return "../" + storagePath.replace(/^\//, "");
+  return `${cfg.SUPABASE_URL}/storage/v1/object/public/piezas/${storagePath}`;
+}
