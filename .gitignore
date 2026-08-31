@@ -1,0 +1,16 @@
+# Sistema
+.DS_Store
+
+# Dependencias / build (no se usan hoy, pero por si acaso)
+node_modules/
+dist/
+
+# Netlify
+.netlify/
+
+# Temporales
+*.log
+*.tmp
+
+# NOTA: assets/config.js SÍ se versiona.
+# La publishable key de Supabase es pública por diseño; la seguridad está en las políticas RLS.
