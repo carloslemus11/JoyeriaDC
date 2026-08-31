@@ -265,7 +265,8 @@ El usuario subió dos fotos de tela de seda (stock de Pexels, no de su negocio) 
 
 ## Pendiente / en curso
 
-- **Migración a Supabase — Fases 1 a 6 HECHAS y verificadas (2026-08-31).** El sitio funciona completo sobre Supabase en local.
-- **PENDIENTE: primer deploy a Netlify** (`README.md`). El sitio solo corre en `localhost:8743`. Necesita: cuenta de Netlify del usuario y decidir GitHub vs deploy manual.
-- Pendientes menores en el dashboard de Supabase: activar "Leaked password protection" (único advisor que queda). Considerar SMTP propio si se quiere reactivar "Confirm email" para clientes.
-- `revision-final` todavía no se ha corrido ni una vez — buen momento para correrlo tras el deploy.
+- **Migración a Supabase — Fases 1 a 6 HECHAS y verificadas (2026-08-31), incluido en producción.**
+- **EN PRODUCCIÓN:** <https://joyeriadc.netlify.app> (admin: `/admin/`). Publicado con **Netlify Drop** (arrastrar carpeta), NO conectado a GitHub todavía → para actualizar hay que volver a arrastrar la carpeta a app.netlify.com/drop, o conectar el repo `carloslemus11/JoyeriaDC` en Netlify. El repo local tiene el remote configurado pero el push aún no se hizo (requiere credenciales de GitHub del usuario).
+- Verificado en producción: catálogo desde la base, fotos desde Storage, `/admin` con login, registro de cliente + favoritos. Sin errores de consola/CSP/CORS.
+- Pendientes menores en el dashboard de Supabase: (1) activar "Leaked password protection" (único advisor). (2) poner el **Site URL** = `https://joyeriadc.netlify.app` en Authentication → URL Configuration. (3) SMTP propio si se quiere reactivar "Confirm email" para clientes.
+- `revision-final` todavía no se ha corrido ni una vez — buen momento para correrlo ahora que está en producción.
