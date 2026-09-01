@@ -178,12 +178,20 @@
     border-bottom-color:var(--border); padding:12px 28px;
   }
   .brand{display:flex; align-items:center; gap:13px; text-decoration:none; color:var(--ink);}
+  /* Monograma DC entrelazado (ver logo de referencia): la C se solapa hondo con
+     la D y cae un poco, como dos aros enlazados; ambas en tonos oro rosa. */
   .brand-mark{
+    position:relative;
     width:52px; height:52px; border-radius:50%; border:1.5px solid var(--gold);
     display:flex; align-items:center; justify-content:center;
-    font-family:var(--font-display); font-weight:600; font-size:19px; color:var(--ink); letter-spacing:-.01em;
+    font-family:var(--font-display); font-weight:600; font-size:20px; letter-spacing:-.01em;
+    color:var(--gold-strong);
   }
-  .brand-mark .logo-c{color:var(--gold-strong); margin-left:-.06em;}
+  .brand-mark .logo-d{position:relative; z-index:2;}
+  .brand-mark .logo-c{
+    position:relative; z-index:1; margin-left:-.2em; transform:translateY(.04em);
+    font-weight:500; color:var(--gold);
+  }
   .brand-name{font-family:var(--font-display); font-size:22px; font-weight:500;}
   @media (max-width:720px){ .brand-mark{width:44px; height:44px; font-size:16px;} .brand-name{font-size:19px;} }
   .nav-links{display:flex; align-items:center; gap:32px; list-style:none; margin:0; padding:0;}
@@ -259,12 +267,25 @@
 
   .logo-wrap{position:relative; z-index:1; display:flex; justify-content:center; align-items:center;}
   .logo-lockup{display:flex; flex-direction:column; align-items:center; text-align:center;}
+  /* Monograma DC entrelazado con un diamante en el cruce (ver logo de referencia). */
   .logo-dc{
+    position:relative; display:inline-flex; align-items:baseline; justify-content:center;
     font-family:var(--font-display); font-weight:600; font-style:normal;
     font-size:clamp(110px, 13vw, 190px); line-height:.78; letter-spacing:-.02em;
-    color:var(--ink);
+    color:var(--gold-strong);
   }
-  .logo-dc .logo-c{margin-left:-.2em; color:var(--gold-strong);}
+  .logo-dc .logo-d{position:relative; z-index:2;}
+  .logo-dc .logo-c{
+    position:relative; z-index:1; margin-left:-.37em; transform:translateY(.1em);
+    font-weight:500; color:var(--gold);
+  }
+  .logo-dc .logo-gem{
+    position:absolute; z-index:3; left:50%; top:50%;
+    width:.09em; height:.16em; transform:translate(-44%,-38%);
+    background:linear-gradient(125deg, #ffffff 0%, var(--rose) 48%, var(--gold-strong) 100%);
+    clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    box-shadow:0 0 .06em rgba(255,255,255,.9);
+  }
   .logo-rule{width:74px; height:1px; background:var(--gold); margin:18px 0 16px;}
   .logo-18k{
     font-family:var(--font-display); font-style:italic; font-weight:400;

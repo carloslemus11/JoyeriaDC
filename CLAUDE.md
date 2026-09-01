@@ -158,10 +158,12 @@ Hay dos sistemas de fondo "seda", uno CSS puro (el original) y uno fotográfico 
   - Un detalle chico de paleta: `#coleccion` tiene además una capa extra `radial-gradient(..., var(--emerald-veil), transparent 70%)` — un verde esmeralda profundo casi imperceptible (~5-7% opacidad) en una esquina, como guiño sutil a la paleta "blanco/marfil/champán/dorado/esmeralda/negro suave" que pidió el usuario, sin tocar el dorado como único acento en botones/bordes/íconos.
 
 ### Logo
-No existe un archivo de logo real (se buscó en Canva y en carpetas locales del usuario y no se encontró uno). El logo se recreó en HTML/CSS puro como un "lockup":
-- **"D" + "C"** superpuestas en Fraunces bold, la C en color dorado con margen negativo para que se solapen (imitando el monograma real de la marca, visto en fotos de producto con marca de agua).
-- Debajo: línea dorada fina, "18K" en cursiva, "Amor, arte y estilo" en mayúsculas pequeñas con tracking amplio (mono font).
-- Usado en dos tamaños: grande en el hero (`.logo-lockup`, reemplazó un SVG de diamante/gema que estaba ahí antes — se quitó por pedido explícito del usuario), y pequeño en el badge circular de la barra de navegación (`.brand-mark`, 52px, antes 38px — se agrandó para darle más presencia al logo).
+Sigue siendo HTML/CSS puro (no hay archivo de logo vectorial en el repo). El **2026-09-01 el usuario compartió un logo de referencia** (monograma DC entrelazado en oro rosa, con un diamante tipo marquesa en el cruce y "AMOR, ARTE Y ESTILO" debajo) y pidió adaptarlo "jugando solo con la D y la C, sin tocar los colores de fondo".
+- **Monograma "D" + "C" entrelazado:** dos `<span>` (`.logo-d`, `.logo-c`) en Fraunces. La D va delante (`z-index:2`), la C detrás (`z-index:1`) con `margin-left` negativo (solape hondo) y un `translateY` pequeño (cae un poco, como dos aros enlazados). Ambas letras en tonos oro rosa (`--gold-strong` la D, `--gold` la C) — antes la D era `--ink` (oscura); se cambió para igualar el logo de referencia (mono oro rosa).
+- **Diamante en el cruce** (`.logo-gem`, solo en el hero): rombo/marquesa con `clip-path`, gradiente blanco→`--rose`→`--gold-strong`, `position:absolute` sobre la junta D/C.
+- Debajo (sin cambios): línea dorada fina (`.logo-rule`), "18K" en cursiva, "Amor, arte y estilo" en mono con tracking amplio.
+- Dos tamaños: grande en el hero (`.logo-lockup` con el diamante) y el badge circular de la nav (`.brand-mark`, 52px, sin diamante — muy chico; solape más suave para que la C se lea).
+- Si algún día se quiere el logo real como imagen, hace falta un PNG/SVG **con fondo transparente** (el que mandó el usuario tiene la seda de fondo horneada).
 
 ### Layout / componentes
 - Nav fija con blur al hacer scroll (clase `.is-scrolled`), menú hamburguesa en móvil.
