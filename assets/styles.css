@@ -201,24 +201,35 @@
   }
 
   /* ---------- hero ---------- */
+  /* El hero ocupa todo el ancho, como las <section>, y su contenido se limita
+     con .hero-inner. La foto de seda se fija al viewport (fondo compartido por
+     hero + todas las secciones, ver .hero, #coleccion, .atelier, .loc, footer):
+     así el fondo es UNA sola tela continua de arriba a abajo, sin líneas ni
+     costuras entre bloques. En móvil, Safari iOS ignora "fixed" y cae a
+     "scroll" (aceptable: se scrollea rápido y sigue siendo la misma seda). */
   .hero{
-    position:relative; padding:196px 28px 120px; overflow:hidden;
-    display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:40px;
-    max-width:var(--container); margin:0 auto;
-    background-color:var(--bg);
+    position:relative; padding:196px 0 120px; overflow:hidden;
+    background-color:var(--surface);
     background-image:
       linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
       var(--photo-ivory);
     background-size:cover, cover;
-    background-position:center, 50% 12%;
+    background-position:center, center;
     background-repeat:no-repeat, no-repeat;
+    background-attachment:scroll, fixed;
   }
-  @media (max-width:960px){ .hero{grid-template-columns:1fr; padding:150px 28px 70px;} }
-  @media (max-width:960px){ .hero{background-position:center, 50% 9%;} }
-  @media (max-width:720px){ .hero{padding-left:20px; padding-right:20px;} }
-  @media (max-width:720px){ .hero{background-position:center, 50% 5%;} }
+  .hero-inner{
+    position:relative; z-index:1;
+    max-width:var(--container); margin:0 auto; padding:0 28px;
+    display:grid; grid-template-columns:1.1fr .9fr; align-items:center; gap:40px;
+  }
+  @media (max-width:960px){
+    .hero{ padding:150px 0 70px; }
+    .hero-inner{ grid-template-columns:1fr; }
+  }
+  @media (max-width:720px){ .hero-inner{ padding-left:20px; padding-right:20px; } }
   .hero::before{
-    content:""; position:absolute; top:-20%; right:-10%; width:640px; height:640px;
+    content:""; position:absolute; top:-20%; right:0; width:640px; height:640px;
     background:radial-gradient(circle, var(--gold-glow), transparent 70%);
     filter:blur(10px); pointer-events:none;
   }
@@ -271,10 +282,10 @@
       linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
       var(--photo-ivory);
     background-size:cover, cover, cover;
-    background-position:center, center, 50% 28%;
+    background-position:center, center, center;
     background-repeat:no-repeat, no-repeat, no-repeat;
+    background-attachment:scroll, scroll, fixed;   /* seda fija = fondo continuo, sin costura con el hero */
   }
-  @media (max-width:720px){ #coleccion{background-position:center, center, 50% 16%;} }
   .section-head{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:56px; flex-wrap:wrap;}
   .cat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border);}
   @media (max-width:860px){ .cat-grid{grid-template-columns:repeat(2,1fr);} }
@@ -322,10 +333,10 @@
       linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
       var(--photo-ivory);
     background-size:cover, cover;
-    background-position:center, 50% 55%;
+    background-position:center, center;
     background-repeat:no-repeat, no-repeat;
+    background-attachment:scroll, fixed;
   }
-  @media (max-width:720px){ .atelier{background-position:center, 50% 38%;} }
   .story{padding:44px 0;}
   .story:not(:last-child){border-bottom:1px solid var(--border);}
   .story-index{font-family:var(--font-mono); color:var(--gold); font-size:13px; letter-spacing:.08em;}
@@ -359,10 +370,10 @@
       linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
       var(--photo-ivory);
     background-size:cover, cover;
-    background-position:center, 50% 70%;
+    background-position:center, center;
     background-repeat:no-repeat, no-repeat;
+    background-attachment:scroll, fixed;
   }
-  @media (max-width:720px){ .loc{background-position:center, 50% 55%;} }
   .loc-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;}
   @media (max-width:860px){ .loc-grid{grid-template-columns:1fr;} }
   .loc-item{display:flex; gap:16px; padding:18px 0; border-top:1px solid var(--border);}
@@ -398,16 +409,16 @@
 
   /* ---------- footer ---------- */
   footer{
-    padding:64px 0 40px; border-top:1px solid var(--border); position:relative;
+    padding:64px 0 40px; position:relative;
     background-color:var(--surface);
     background-image:
       linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
       var(--photo-ivory);
     background-size:cover, cover;
-    background-position:center, 50% 85%;
+    background-position:center, center;
     background-repeat:no-repeat, no-repeat;
+    background-attachment:scroll, fixed;
   }
-  @media (max-width:720px){ footer{background-position:center, 50% 65%;} }
   .foot-grid{display:flex; justify-content:space-between; gap:40px; flex-wrap:wrap;}
   .foot-brand p{margin-top:12px; color:var(--muted); font-size:13.5px; max-width:32ch;}
   .foot-cols{display:flex; gap:56px; flex-wrap:wrap;}

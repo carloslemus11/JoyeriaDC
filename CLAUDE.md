@@ -147,18 +147,19 @@ Hay dos sistemas de fondo "seda", uno CSS puro (el original) y uno fotográfico 
   --photo-champagne: url("data:image/webp;base64,...");  /* sin usar actualmente, ver nota abajo */
   --photo-ivory: url("data:image/webp;base64,...");       /* la que está en uso */
   ```
-  - Se usa **una sola** de las dos fotos (`--photo-ivory`, seda blanca/marfil) en **toda la página**: hero, Colección (`#coleccion`), Atelier y Sugerencias (comparten clase `.atelier`), Ubicación (`.loc`) y footer. Cada sección la aplica así:
+  - Se usa **una sola** de las dos fotos (`--photo-ivory`, seda blanca/marfil) en **toda la página**: hero, Colección (`#coleccion`), Atelier y Sugerencias (comparten clase `.atelier`), Ubicación (`.loc`) y footer. Cada bloque la aplica así:
     ```css
     background-color: var(--surface); /* fallback sólido mientras carga / si algo falla */
     background-image:
       linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)), /* capa de tinte translúcido */
       var(--photo-ivory);
     background-size: cover, cover;
-    background-position: center, <foco propio de la sección>;
+    background-position: center, center;
     background-repeat: no-repeat, no-repeat;
+    background-attachment: scroll, fixed;   /* la foto se fija al viewport */
     ```
   - `--silk-photo-ivory` es el tinte translúcido encima de la foto (≈76% opacidad en modo claro, ≈74% en oscuro, valores por tema en `:root`, en el bloque `@media (prefers-color-scheme: dark)` y en `:root[data-theme="dark"]`) — sin este tinte el texto no tendría contraste suficiente sobre la tela.
-  - Cada sección usa un `background-position` distinto (con su propio ajuste en `@media (max-width:720px)`) para no repetir literalmente el mismo recorte de la foto en cada bloque, aunque sea la misma imagen de fondo.
+  - **Actualización 2026-08-31 (a pedido del usuario):** la capa de la FOTO usa `background-attachment: fixed` y `background-position: center` **idénticos en todos los bloques**, así la seda es **una sola tela continua fija al viewport**, sin líneas ni costuras entre secciones. Antes cada sección tenía un `background-position` distinto (`50% 12%` → `85%`, "recorte propio") que producía costuras visibles en cada junta; eso se eliminó. El `hero` además es full-width (`<header>` sin `max-width`; el contenido se limita con `.hero-inner`) para que la seda llegue a los bordes. En **iOS Safari** `fixed` se ignora y cae a `scroll` (las costuras vuelven en iPhone, pero es degradación aceptable). Los `@media (max-width:720px)` que reposicionaban el fondo se quitaron.
   - El hero **tuvo** una tarjeta de vidrio esmerilado envolviendo `.hero-copy`, pero el usuario pidió (2026-08-31) quitarla para que el fondo del hero se vea igual de continuo que el resto de las secciones. Ahora `.hero-copy` solo es `position:relative; z-index:1;` y el texto va directo sobre la seda tintada — el contraste lo da el tinte `--silk-photo-ivory` (76%/74%), verificado en claro y oscuro. Al quitar el padding de la tarjeta, el titular pasó de 3 a 2 líneas ("Joyas con *alma*," / "hechas para durar."). `.hero h1` lleva `padding-left:.06em` para que el pie curvo de la "J" de Fraunces no cuelgue del margen. `--surface-glass` sigue en uso en la nav al hacer scroll.
   - **`--photo-champagne` existió y se usó primero solo en el hero** (para diferenciar la "portada" del resto), pero el usuario pidió después unificar todo el sitio con un solo tono/foto → se quitó del hero y quedó sin uso en ningún selector. Si en algún momento se reactiva un fondo distinto para el hero, la foto original está en `IMAGENES JOYAS/Texturas de seda/` lista para volver a optimizarse e insertarse igual que la marfil.
   - Un detalle chico de paleta: `#coleccion` tiene además una capa extra `radial-gradient(..., var(--emerald-veil), transparent 70%)` — un verde esmeralda profundo casi imperceptible (~5-7% opacidad) en una esquina, como guiño sutil a la paleta "blanco/marfil/champán/dorado/esmeralda/negro suave" que pidió el usuario, sin tocar el dorado como único acento en botones/bordes/íconos.
