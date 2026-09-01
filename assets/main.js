@@ -85,10 +85,41 @@ function renderCategorias(grid, categorias) {
   wireWaLinks(grid);
 }
 
-function renderPiezas(grid, piezas) {
+function metaPieza(catNombre) {
+  return catNombre ? catNombre + " · Oro 18K" : "Oro 18K";
+}
+
+var DISPONIBILIDAD = {
+  disponible: { label: "Disponible en tienda", cls: "is-ok" },
+  encargo: { label: "Por encargo", cls: "is-encargo" },
+  agotada: { label: "Agotada", cls: "is-agotada" },
+};
+function dispDe(pieza) {
+  return DISPONIBILIDAD[pieza && pieza.disponibilidad] || DISPONIBILIDAD.disponible;
+}
+function textoCta(pieza) {
+  return (pieza && pieza.disponibilidad === "agotada")
+    ? "Consultar por WhatsApp"
+    : "Cotizar esta pieza";
+}
+
+function renderPiezas(grid, piezas, catMap) {
   grid.innerHTML = "";
   piezas.forEach(function (pieza) {
-    var cell = el("div", { class: "gallery-item", "data-pieza-id": pieza.id });
+    var catNombre = (catMap && catMap[pieza.categoria_id]) || "";
+    var disp = dispDe(pieza);
+    var cell = el("article", {
+      class: "gallery-item" + (pieza.disponibilidad === "agotada" ? " is-agotada" : ""),
+      "data-pieza-id": pieza.id
+    });
+
+    var trigger = el("button", {
+      class: "gallery-open", type: "button",
+      "aria-haspopup": "dialog",
+      "aria-label": "Ver " + pieza.nombre
+    });
+
+    var media = el("span", { class: "gallery-media" });
     if (pieza.foto) {
       var img = el("img", {
         src: fotoUrl(pieza.foto.storage_path),
@@ -97,32 +128,124 @@ function renderPiezas(grid, piezas) {
       });
       img.addEventListener("error", function handler() {
         img.removeEventListener("error", handler);
-        cell.classList.add("no-photo");
+        media.classList.add("is-empty");
         img.remove();
       });
-      cell.appendChild(img);
+      media.appendChild(img);
     } else {
-      cell.classList.add("no-photo");
+      media.classList.add("is-empty");
     }
+    trigger.appendChild(media);
 
-    var link = el("a", {
-      class: "gallery-link wa-link", href: "#",
-      "aria-label": "Cotizar " + pieza.nombre + " por WhatsApp",
+    var name = el("span", { class: "gallery-name" });
+    name.textContent = pieza.nombre;
+    trigger.appendChild(name);
+
+    var meta = el("span", { class: "gallery-meta" });
+    meta.textContent = metaPieza(catNombre);
+    trigger.appendChild(meta);
+
+    var stock = el("span", { class: "gallery-stock " + disp.cls });
+    stock.textContent = disp.label;
+    trigger.appendChild(stock);
+
+    var hint = el("span", { class: "gallery-hint" }, "Ver pieza");
+    trigger.appendChild(hint);
+
+    trigger.addEventListener("click", function () {
+      abrirPieza(pieza, catNombre, trigger);
+    });
+    cell.appendChild(trigger);
+
+    var cta = el("a", {
+      class: "btn btn-fill btn-sm gallery-cta wa-link", href: "#",
       "data-wa-msg": "Hola, quiero comprar/cotizar: " + pieza.nombre + ".",
       "data-cotiza": pieza.nombre, "data-cotiza-origen": "galeria",
       "data-pieza-id": pieza.id,
       target: "_blank", rel: "noopener"
-    });
-    cell.appendChild(link);
-
-    var tag = el("span", { class: "gallery-tag" });
-    tag.textContent = pieza.nombre;
-    cell.appendChild(tag);
+    }, textoCta(pieza));
+    cell.appendChild(cta);
 
     grid.appendChild(cell);
   });
   grid.removeAttribute("data-estado");
   wireWaLinks(grid);
+}
+
+/* ---------- vista ampliada de una pieza (modal) ---------- */
+var piezaModal = null;
+var piezaModalReturnFocus = null;
+
+function initPiezaModal() {
+  piezaModal = document.getElementById("piezaModal");
+  if (!piezaModal) return;
+  piezaModal.querySelectorAll("[data-close]").forEach(function (n) {
+    n.addEventListener("click", cerrarPieza);
+  });
+  var closeBtn = document.getElementById("piezaModalClose");
+  if (closeBtn) closeBtn.addEventListener("click", cerrarPieza);
+  document.addEventListener("keydown", function (e) {
+    if (piezaModal.hidden) return;
+    if (e.key === "Escape") { cerrarPieza(); return; }
+    if (e.key === "Tab") {
+      var foco = piezaModal.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])');
+      if (!foco.length) return;
+      var primero = foco[0], ultimo = foco[foco.length - 1];
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    }
+  });
+}
+
+function abrirPieza(pieza, catNombre, returnFocusEl) {
+  if (!piezaModal) return;
+  piezaModalReturnFocus = returnFocusEl || null;
+
+  var media = document.getElementById("piezaModalMedia");
+  media.innerHTML = "";
+  if (pieza.foto) {
+    media.classList.remove("is-empty");
+    media.appendChild(el("img", {
+      src: fotoUrl(pieza.foto.storage_path),
+      alt: pieza.foto.alt || pieza.nombre
+    }));
+  } else {
+    media.classList.add("is-empty");
+  }
+
+  document.getElementById("piezaModalMeta").textContent = metaPieza(catNombre);
+  document.getElementById("piezaModalName").textContent = pieza.nombre;
+
+  var disp = dispDe(pieza);
+  var stock = document.getElementById("piezaModalStock");
+  if (stock) {
+    stock.textContent = disp.label;
+    stock.className = "pieza-modal__stock " + disp.cls;
+  }
+
+  var desc = document.getElementById("piezaModalDesc");
+  if (pieza.descripcion) { desc.textContent = pieza.descripcion; desc.hidden = false; }
+  else { desc.textContent = ""; desc.hidden = true; }
+
+  var cta = document.getElementById("piezaModalCta");
+  cta.setAttribute("data-wa-msg", "Hola, quiero comprar/cotizar: " + pieza.nombre + ".");
+  cta.setAttribute("data-cotiza", pieza.nombre);
+  cta.setAttribute("data-pieza-id", pieza.id);
+  cta.textContent = textoCta(pieza);
+  wireWaLinks(piezaModal);
+
+  piezaModal.hidden = false;
+  document.body.classList.add("modal-open");
+  var closeBtn = document.getElementById("piezaModalClose");
+  if (closeBtn) closeBtn.focus();
+}
+
+function cerrarPieza() {
+  if (!piezaModal || piezaModal.hidden) return;
+  piezaModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  if (piezaModalReturnFocus && piezaModalReturnFocus.focus) piezaModalReturnFocus.focus();
+  piezaModalReturnFocus = null;
 }
 
 function renderCatalogoError(catGrid, galleryGrid) {
@@ -148,8 +271,10 @@ async function cargarCatalogo() {
   if (!catGrid && !galleryGrid) return;
   try {
     var [categorias, piezas] = await Promise.all([getCategorias(), getPiezas()]);
+    var catMap = {};
+    categorias.forEach(function (c) { catMap[c.id] = c.nombre; });
     if (catGrid) renderCategorias(catGrid, categorias);
-    if (galleryGrid) renderPiezas(galleryGrid, piezas);
+    if (galleryGrid) renderPiezas(galleryGrid, piezas, catMap);
     observeReveal([].slice.call(document.querySelectorAll("#coleccion .reveal:not(.is-visible)")));
   } catch (e) {
     console.warn("[Joyería DC] No se pudo cargar el catálogo:", e && e.message);
@@ -210,6 +335,7 @@ function initSitio() {
 
   document.getElementById("year").textContent = new Date().getFullYear();
 
+  initPiezaModal();
   cargarContenido();
   initSuggestions();
   cargarCatalogo();

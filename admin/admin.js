@@ -242,6 +242,24 @@ const TEXTOS_GRUPOS = [
     ["ubic_titulo", "Título", "input"],
     ["ubic_direccion", "Dirección (línea 1)", "input"],
     ["ubic_ciudad", "Ciudad / país (línea 2)", "input"],
+    ["ubic_horario", "Horario de atención", "input"],
+  ]],
+  ["Franja de confianza", [
+    ["trust1", "Mensaje 1", "input"], ["trust2", "Mensaje 2", "input"],
+    ["trust3", "Mensaje 3", "input"], ["trust4", "Mensaje 4", "input"],
+    ["trust5", "Mensaje 5", "input"],
+  ]],
+  ["FAQ", [
+    ["faq_horario", "Respuesta — horario", "textarea"],
+    ["faq_pagos", "Respuesta — formas de pago", "textarea"],
+    ["faq_envios", "Respuesta — envíos", "textarea"],
+  ]],
+  ["Garantía", [
+    ["garantia_titulo", "Título de la sección", "input"],
+    ["garantia_p1", "Punto 1 — autenticidad", "textarea"],
+    ["garantia_p2", "Punto 2 — defectos de fabricación", "textarea"],
+    ["garantia_p3", "Punto 3 — exclusiones", "textarea"],
+    ["garantia_p4", "Punto 4 — mantenimiento", "textarea"],
   ]],
   ["Footer", [
     ["footer_desc", "Descripción de marca", "textarea"],
@@ -338,7 +356,7 @@ async function refreshPiezas() {
       <div class="admin-thumb">${foto ? `<img src="${fotoSrc(foto.storage_path)}" alt="">` : '<span>—</span>'}</div>
       <div class="admin-row-main">
         <strong>${esc(p.nombre)}</strong>
-        <span class="admin-mono">${p.categorias ? esc(p.categorias.nombre) : "sin categoría"} · orden ${p.orden}${p.activa ? "" : " · inactiva"}</span>
+        <span class="admin-mono">${p.categorias ? esc(p.categorias.nombre) : "sin categoría"} · orden ${p.orden}${p.disponibilidad && p.disponibilidad !== "disponible" ? " · " + (p.disponibilidad === "encargo" ? "por encargo" : "agotada") : ""}${p.activa ? "" : " · inactiva"}</span>
         ${p.descripcion ? `<span class="admin-row-sub">${esc(p.descripcion)}</span>` : ""}
       </div>
       <div class="admin-row-actions"></div>`;
@@ -456,6 +474,14 @@ function openPiezaForm(p) {
         categoriasCache.map((c) => ({ value: c.id, label: c.nombre }))),
     }) +
     field("Descripción", "descripcion", p?.descripcion, { type: "textarea" }) +
+    field("Disponibilidad", "disponibilidad", p?.disponibilidad ?? "disponible", {
+      type: "select",
+      options: [
+        { value: "disponible", label: "Disponible en tienda" },
+        { value: "encargo", label: "Por encargo" },
+        { value: "agotada", label: "Agotada" },
+      ],
+    }) +
     field("Orden", "orden", p?.orden ?? 100, { type: "number" }) +
     field("Activa", "activa", p ? p.activa : true, { type: "checkbox" }),
     async (fd) => {
@@ -463,6 +489,7 @@ function openPiezaForm(p) {
         nombre: fd.get("nombre").trim(),
         categoria_id: fd.get("categoria_id") || null,
         descripcion: emptyNull(fd.get("descripcion")),
+        disponibilidad: fd.get("disponibilidad") || "disponible",
         orden: parseInt(fd.get("orden"), 10) || 0,
         activa: fd.get("activa") === "on",
       };

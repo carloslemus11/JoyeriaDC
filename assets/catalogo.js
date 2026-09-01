@@ -30,7 +30,7 @@ export async function getCategorias() {
 export async function getPiezas() {
   const { data, error } = await sb
     .from("piezas")
-    .select("id, nombre, descripcion, orden, categoria_id, pieza_fotos(storage_path, alt, orden)")
+    .select("id, nombre, descripcion, disponibilidad, orden, categoria_id, pieza_fotos(storage_path, alt, orden)")
     .eq("activa", true)
     .order("orden", { ascending: true });
   if (error) throw error;

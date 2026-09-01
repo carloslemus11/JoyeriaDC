@@ -69,7 +69,9 @@ JOYERIA.DC./
   `supabase/*.sql`.** Si se recrea el proyecto: correr `schema.sql` → `policies.sql` →
   `storage.sql` → `funciones.sql` → `seed-catalogo.sql` en el SQL Editor.
 - **Tablas** (`public`): `categorias`, `piezas`, `pieza_fotos`, `sugerencias`,
-  `cotizaciones`, `contenido_sitio`, `perfiles`, `visitas`.
+  `cotizaciones`, `contenido_sitio`, `perfiles`, `visitas`. `piezas.disponibilidad`
+  (`'disponible'|'encargo'|'agotada'`, default `'disponible'`) — migración
+  `piezas_disponibilidad` (2026-09-01).
 - **Regla RLS:** el público (anon) solo LEE catálogo/textos activos e INSERTA
   sugerencias / cotizaciones / visitas. Todo lo demás exige sesión admin
   (`private.is_admin()` = tener fila en `public.perfiles` con `rol='admin'`). Hoy hay **un
@@ -128,7 +130,11 @@ Estética "premium, con capas" tipo Apple: mucho espacio en blanco, tipografía 
 paneles translúcidos, scroll-reveal sutil, botones tipo píldora. Se respeta
 `prefers-reduced-motion`.
 
-### Tipografía (Google Fonts — únicas dependencias externas)
+### Dependencias externas
+Google Fonts (tipografías, abajo) y —desde Fase B— un `<iframe>` de Google Maps
+(`output=embed`, sin API key) en la sección Ubicación. Nada más carga de terceros.
+
+### Tipografía (Google Fonts)
 - **Fraunces** (serif variable, con eje óptico e itálica) — titulares grandes y acentos en
   cursiva (la palabra "alma" del hero, el "18K" del logo, el monograma DC).
 - **Manrope** — cuerpo (párrafos, botones, nav).
@@ -202,9 +208,10 @@ solo con la D y la C, sin tocar los colores de fondo". Estado actual:
   gradiente blanco→`--rose`→`--gold-strong`, `position:absolute` sobre la junta D/C.
 - Debajo: línea dorada fina (`.logo-rule`), "18K" en cursiva, "Amor, arte y estilo" en mono
   con tracking amplio.
-- Tres apariciones: hero (`.logo-lockup`, con diamante), badge circular de la nav
-  (`.brand-mark`, 52px, sin diamante y con solape más suave para que la C se lea), y el
-  mismo badge en el footer.
+- Tres apariciones: hero (`.logo-lockup.logo-lockup--sm`, con diamante, en menor tamaño
+  debajo de la foto protagonista — antes era el monograma gigante que dominaba el hero),
+  badge circular de la nav (`.brand-mark`, 52px, sin diamante y con solape más suave para
+  que la C se lea), y el mismo badge en el footer.
 - Para usar el logo real como imagen haría falta un **PNG/SVG con fondo transparente** (el
   de referencia tiene la seda horneada).
 
@@ -220,14 +227,18 @@ solo con la D y la C, sin tocar los colores de fondo". Estado actual:
 
 | Sección | id | Contenido |
 |---|---|---|
-| Nav | — | Logo + "Joyería DC", links, botón "Cotizar" |
-| Hero | `#top` | Titular, bajada, CTAs, fila de stats (18K / seguidores IG / local), logo grande con diamante |
-| Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas, **ambas desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Estados de carga (shimmer) y de error (mensaje + WhatsApp). |
+| Nav | — | Logo + "Joyería DC", links (Colección / Atelier / Preguntas / Ubicación), botón "Cotizar" |
+| Hero | `#top` | Titular, bajada, CTAs, fila de stats (18K / seguidores IG / local), **foto protagonista de una pieza** (`assets/hero-joya.jpeg`) + monograma DC pequeño con diamante debajo (`.hero-visual` / `.logo-lockup--sm`) |
+| Franja de confianza | — | `.trust-strip` tras el hero: 5 mensajes con ícono (Oro 18K · compra presencial en Ibagué · atención personalizada · garantía 6 meses · envíos + pagos). Textos con `data-cs="trust1..5"`. No interactiva |
+| Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas, **ambas desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Cada pieza es una tarjeta (`.gallery-item`) con nombre grande, "Categoría · Oro 18K", **etiqueta de disponibilidad** (disponible / por encargo / agotada), botón "Cotizar esta pieza" y disparador de la vista ampliada. "Agotada" atenúa la tarjeta y el botón pasa a "Consultar por WhatsApp". Estados de carga (shimmer) y de error (mensaje + WhatsApp). |
 | Atelier | `#atelier` | 3 bloques "por qué elegirnos" |
-| Sugerencias | `#sugerencias` | Formulario → `public.sugerencias` (pendiente); la lista pública solo muestra las aprobadas |
-| Ubicación | `#ubicacion` | Dirección, WhatsApp, Instagram, botón "Cómo llegar" (Google/Apple Maps) |
+| Preguntas frecuentes | `#faq` | Acordeón `<details>` nativo (sin JS). Respuestas reales: oro 18K, verlas en persona, horario, formas de pago, envíos, garantía (resumen + enlace a `#garantia`) |
+| Garantía | `#garantia` | Texto formal de 4 puntos (autenticidad del oro · defectos de fabricación 6 meses · exclusiones · mantenimiento). Editable desde `/admin` → "Textos". Botón "Preguntar por la garantía" (WhatsApp) |
+| Ubicación | `#ubicacion` | Dirección, **horario (L–V 9 a.m.–5 p.m.)**, WhatsApp con número visible, Instagram, **mapa de Google Maps incrustado** (`.loc-visual` → `<iframe>` lazy), botón "Cómo llegar" (Google/Apple Maps) |
+| Sugerencias | `#sugerencias` | Bloque compacto **antes del footer** (movido desde su lugar central). Formulario → `public.sugerencias`; la lista pública solo muestra las aprobadas |
 | Footer | — | Resumen de marca, links rápidos, contacto |
-| FAB | — | WhatsApp "servicio al cliente", fijo abajo a la derecha |
+| FAB / barra CTA | — | En escritorio: FAB circular de WhatsApp abajo a la derecha. En móvil (`≤720px`): el FAB se oculta y aparece `.cta-bar` fija abajo ("Cotizar por WhatsApp"); el `footer` reserva `padding-bottom` para no quedar tapado |
+| Modal de pieza | `#piezaModal` | Vista ampliada: foto grande + nombre + "Categoría · Oro 18K" + descripción (si hay) + "Cotizar esta pieza". Abre al tocar una tarjeta; cierra con X / Escape / clic fuera; maneja foco y `body.modal-open` |
 
 ## Funcionalidad / interactividad
 
@@ -256,6 +267,13 @@ solo con la D y la C, sin tocar los colores de fondo". Estado actual:
   `contenido_sitio`; si la clave no existe o la carga falla, queda el texto del HTML.
 - **Scroll-reveal:** `IntersectionObserver` agrega `.is-visible` a los `.reveal`.
 - **Maps:** el botón "Cómo llegar" usa Apple Maps en iOS y Google Maps en el resto.
+- **Vista ampliada de pieza (`main.js` → `abrirPieza`/`cerrarPieza`/`initPiezaModal`):** un
+  único `#piezaModal` en `index.html` que se rellena al vuelo. `renderPiezas` construye cada
+  tarjeta con un `<button class="gallery-open">` (dispara el modal) y un `<a>` "Cotizar esta
+  pieza" aparte. La categoría se resuelve con un mapa `categoria_id → nombre` armado en
+  `cargarCatalogo` desde las `categorias` ya cargadas. El modal atrapa foco (Tab/Shift+Tab),
+  cierra con Escape / X / clic en overlay, y bloquea el scroll con `body.modal-open`.
+- **FAQ (`#faq`):** acordeón con `<details>/<summary>` nativo, sin JS.
 
 ### Notas del panel `/admin`
 - `admin.css` tiene `[hidden]{display:none!important}` porque `.admin-modal`/`.admin-shell`
@@ -329,6 +347,23 @@ requerir abrir sesión nueva para aparecer listadas.
 
 ## Pendiente / en curso
 
+- **Mejoras de interfaz — Fases A y B: HECHAS** (specs/planes
+  `docs/{specs,plans}/2026-09-01-mejoras-interfaz-fase-{a,b}.md`).
+  - Fase A: tarjetas de pieza + modal, franja de confianza, foto protagonista en el hero,
+    legibilidad, barra CTA móvil, compactación, FAQ, Sugerencias al pie.
+  - Fase B: `piezas.disponibilidad` + selector en `/admin` + etiqueta en galería/modal,
+    FAQ con respuestas reales, sección `#garantia`, franja de confianza a 5, horario y
+    número visibles en Ubicación, mapa de Google Maps incrustado, grupos nuevos en
+    `/admin` → "Textos" (`ubic_horario`, `trust1..5`, `faq_*`, `garantia_*`).
+  - **Fuera (posible Fase C):** más fotografías por pieza en el modal (subir a Storage) y
+    testimonios de clientes (el negocio aún no tiene reseñas verificables).
+  - **Precios: descartados** — el usuario confirmó mantener el sitio sin precios.
+  - **Garantía:** 6 meses por defectos de fabricación + primera limpieza sin costo. Si los
+    términos cambian, se editan desde `/admin` → "Textos" → "Garantía".
+- **Insignia flotante "Powered by Netlify":** el usuario la reportó en móvil. No está en el
+  código ni aparece en el preview local; Netlify no la inyecta por defecto en sitios
+  normales. Si reaparece en producción, revisar en el dashboard de Netlify (Site settings)
+  o confirmar que no sea una extensión del navegador del usuario.
 - **Supabase Auth (dashboard):** desactivar "Allow new users to sign up"; poner Site URL;
   (opcional, solo Pro) "Leaked password protection". Ver `supabase/setup.md`.
 - **Dominio propio `joyeriadc.com`** — el usuario lo hará más adelante. Recomendado:

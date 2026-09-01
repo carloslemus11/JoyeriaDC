@@ -10,6 +10,8 @@
 --     `quitar_favoritos_agregar_visitas`). Ya no existen las tablas
 --     `calificaciones` ni `favoritos`.
 --   * `visitas` (manejo de tráfico) se agregó el 2026-08-31 (migración `visitas_v2`).
+--   * `piezas.disponibilidad` se agregó el 2026-09-01 (migración `piezas_disponibilidad`):
+--     'disponible' | 'encargo' | 'agotada', default 'disponible'. Editable en /admin.
 
 create extension if not exists pgcrypto;
 
@@ -28,14 +30,16 @@ create table public.categorias (
 
 -- Piezas del catálogo
 create table public.piezas (
-  id           uuid primary key default gen_random_uuid(),
-  nombre       text not null,
-  categoria_id uuid references public.categorias(id) on delete set null,
-  descripcion  text,
-  orden        int  not null default 0,
-  activa       boolean not null default true,
-  created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
+  id             uuid primary key default gen_random_uuid(),
+  nombre         text not null,
+  categoria_id   uuid references public.categorias(id) on delete set null,
+  descripcion    text,
+  disponibilidad text not null default 'disponible'
+                 check (disponibilidad in ('disponible','encargo','agotada')), -- migración piezas_disponibilidad (2026-09-01)
+  orden          int  not null default 0,
+  activa         boolean not null default true,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
 );
 
 -- Fotos de cada pieza (los archivos viven en Storage, bucket "piezas")
