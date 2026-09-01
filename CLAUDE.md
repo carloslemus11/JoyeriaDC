@@ -155,26 +155,38 @@ Ambos temas están **completamente definidos** — paleta clara en `:root`, oscu
 `@media (prefers-color-scheme: dark)` y en `:root[data-theme="dark"]`. Nunca dejar un tema a
 medias.
 
-### Fondo de seda — UNA sola tela continua
+### Fondos por sección (2026-09-01 — se abandonó la "seda continua")
 
-El fondo de toda la página es una foto de seda blanca/marfil (`--photo-ivory`, embebida
-como `data:image/webp;base64` en `styles.css` — de ahí el peso del CSS).
+Antes toda la página era una sola foto de seda continua. **Ahora la seda es solo un acento
+en 2 sitios** y cada zona tiene su propio fondo, a pedido del usuario:
 
-**Arquitectura (importante):** hay **un único elemento `.page-silk`** (`<div class="page-silk">`,
-primer hijo de `<body>`) con `position:fixed; inset:0; z-index:0` que pinta la foto
-(`background: var(--surface) var(--photo-ivory) center/cover`). El contenido va encima
-(`main, footer { position:relative; z-index:1 }`; nav/fab/skip-link ya tienen z-index alto).
-Cada bloque "de seda" (`.hero`, `#coleccion`, `.atelier`, `.loc`, `footer`) **solo lleva un
-tinte translúcido** — `background: var(--silk-photo-ivory)` (rgba ≈76% claro / ≈74% oscuro,
-por tema) — y deja ver la misma `.page-silk` detrás. Resultado: **fondo continuo, sin
-líneas ni costuras entre secciones, en todos los navegadores incluido iPhone.**
+| Sección | Fondo |
+|---|---|
+| Hero (`#top`) | **Seda marfil** (`--silk-photo-ivory`, ahora con más tinte para que el texto se lea) |
+| Franja de confianza (`.trust-strip`) | Blanco cálido (`--sec-blanco`) |
+| Colección (`#coleccion`) | **Marfil liso** (`--sec-marfil`, opaco, sin foto — las joyas son las protagonistas) |
+| Atelier (`#atelier`) | **Seda marfil** (la "sección destacada" con seda) |
+| Garantía (`#garantia`) | **Chocolate oscuro** (`--sec-choco`) con texto crema (`--sec-choco-ink` / `--sec-choco-soft` / `--sec-choco-gold`) |
+| FAQ (`#faq`), Ubicación (`#ubicacion`), Sugerencias (`#sugerencias`), footer | Blanco cálido (`--sec-blanco`) |
+
+Orden de secciones en `index.html`: hero → trust → `#coleccion` → `#atelier` → `#garantia`
+→ `#faq` → `#ubicacion` → `#sugerencias` → footer. (`#garantia` se movió **antes** de
+`#faq` para que el bloque chocolate corte entre el catálogo y la info práctica.)
+
+**Arquitectura de la seda (sigue igual para hero y atelier):** un único elemento
+`.page-silk` (`<div class="page-silk">`, primer hijo de `<body>`) con `position:fixed;
+inset:0; z-index:0` pinta la foto (`--photo-ivory`, WebP en base64 en `styles.css`). El
+contenido va encima (`main, footer { position:relative; z-index:1 }`). Hero y atelier son
+translúcidos (`background: var(--silk-photo-ivory)`, ahora ~0.86 claro / ~0.85 oscuro — más
+tinte que antes) y dejan ver `.page-silk`. El resto de secciones son **opacas** y la tapan.
+Todos los tokens `--sec-*` y `--silk-photo-ivory` tienen variante clara y oscura.
 
 - **Por qué así:** antes cada sección tenía su propia copia de la foto con un
   `background-position` distinto → costuras visibles en cada junta. `background-attachment:
   fixed` lo arreglaba pero **iOS Safari lo ignora**. Un elemento `position:fixed` real sí
   funciona en iOS.
-- `#coleccion` pone además su `radial-gradient(--emerald-veil)` (verde esmeralda ~5-7%
-  opacidad en una esquina) **encima** del tinte.
+- `#coleccion` conserva su `radial-gradient(--emerald-veil)` (verde esmeralda ~5-7%
+  opacidad en una esquina) **encima** del marfil liso.
 - El menú móvil abierto (`.nav-links`) lleva una **copia opaca** de la seda (`center/cover`)
   para tapar el contenido de la página detrás.
 - El `hero` es **full-width** (`<header>` sin `max-width`; el contenido se limita con

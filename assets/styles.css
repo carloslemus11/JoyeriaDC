@@ -677,3 +677,76 @@
   .loc-visual{padding:0; background:var(--bg-alt);}
   .loc-visual iframe{width:100%; height:100%; border:0; display:block;}
   @media (max-width:860px){ .loc-visual{aspect-ratio:16/10;} }
+
+  /* ===================================================================
+     Fondos por sección (2026-09-01) — se abandona la "seda continua":
+       · Portada (hero) y Atelier  → seda (tinte más fuerte donde hay texto)
+       · Garantías rápidas / FAQ / Ubicación / Sugerencias / footer → blanco cálido
+       · Colección → marfil liso (sin foto: las joyas son protagonistas)
+       · Garantía → chocolate oscuro con texto crema
+     =================================================================== */
+  :root{
+    --sec-blanco:#FBF6F1;
+    --sec-marfil:#EFE5D7;
+    --sec-choco:#2B1E17;
+    --sec-choco-ink:#F4E7D9;
+    --sec-choco-soft:#CBB4A2;
+    --sec-choco-gold:#E0B183;
+    --sec-choco-border:rgba(244,231,217,.18);
+    --silk-photo-ivory:rgba(250,245,239,.86);   /* más tinte = menos textura bajo el texto */
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --sec-blanco:#2C201C;
+      --sec-marfil:#241A16;
+      --sec-choco:#17100B;
+      --sec-choco-ink:#F4E7D9;
+      --sec-choco-soft:#C6AD9B;
+      --sec-choco-gold:#E4BA8C;
+      --sec-choco-border:rgba(244,231,217,.14);
+      --silk-photo-ivory:rgba(44,32,28,.85);
+    }
+  }
+  :root[data-theme="dark"]{
+    --sec-blanco:#2C201C;
+    --sec-marfil:#241A16;
+    --sec-choco:#17100B;
+    --sec-choco-ink:#F4E7D9;
+    --sec-choco-soft:#C6AD9B;
+    --sec-choco-gold:#E4BA8C;
+    --sec-choco-border:rgba(244,231,217,.14);
+    --silk-photo-ivory:rgba(44,32,28,.85);
+  }
+
+  /* Blanco cálido */
+  .trust-strip,
+  .faq,
+  .loc,
+  .sugg-section,
+  footer{
+    background:var(--sec-blanco);
+  }
+
+  /* Marfil liso — catálogo */
+  #coleccion{
+    background-color:var(--sec-marfil);
+  }
+
+  /* Chocolate oscuro con texto crema — Garantía */
+  .garantia{
+    background:var(--sec-choco);
+  }
+  .garantia .eyebrow{color:var(--sec-choco-gold);}
+  .garantia h2,
+  .garantia .garantia-list strong{color:var(--sec-choco-ink);}
+  .garantia .lede,
+  .garantia .garantia-list p{color:var(--sec-choco-soft);}
+  .garantia .garantia-num{color:var(--sec-choco-gold);}
+  .garantia .garantia-cta.btn-ghost{
+    color:var(--sec-choco-ink);
+    border-color:var(--sec-choco-border);
+  }
+  .garantia .garantia-cta.btn-ghost:hover{
+    color:var(--sec-choco-gold);
+    border-color:var(--sec-choco-gold);
+  }
