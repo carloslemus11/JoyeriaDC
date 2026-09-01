@@ -193,20 +193,13 @@ líneas ni costuras entre secciones, en todos los navegadores incluido iPhone.**
 - Al usuario le gusta **un solo tono/foto consistente en toda la página**, aunque un pedido
   inicial suyo diga "alternar". Ante un cambio de fondo, confirmar en vez de asumir.
 
-### Cadena decorativa sobre la seda
-
-Encima de `.page-silk` (y detrás del contenido, `z-index:0`) hay una **cadena de eslabones
-de oro dibujada en CSS** que cruza el hero en diagonal y luego baja recta por el borde
-derecho **toda la página**. Dos `<div>` (`.chain-drape` diagonal, `.chain-accent` recto),
-ambos con `background-image:var(--chain-link)` (SVG de dos elipses = un eslabón, embebido
-como data-URI; hay variante clara y oscura como el resto de fotos del CSS) repetido en
-`repeat-y`. `.chain-drape` se rota con `transform:rotate(-83deg)` y `transform-origin:top
-left`; su alto va en `vw` para que la punta llegue al borde sin pasarse. `body`/`html`
-llevan `overflow-x:clip` por si la diagonal se sale. Visible en todos los tamaños (más fina
-en móvil). Tras varias iteraciones el usuario la quiso **claramente visible** (no un
-detalle al fondo): eslabón grande, trazo grueso, oro más oscuro (`#8A6231`) y opacidad
-~0.8–0.85 (algo menos en móvil). Para subirla/bajarla es solo el `opacity` de
-`.chain-accent` / `.chain-drape` y sus media queries.
+- **Cadena decorativa sobre la seda (probada y retirada el 2026-09-01):** se hizo una
+  cadena de eslabones de oro dibujada en CSS (`.chain-drape` diagonal + `.chain-accent`
+  recto, `background-image` de un eslabón SVG repetido) que cruzaba el hero y bajaba por el
+  borde derecho de toda la página. Tras varias iteraciones de intensidad, al usuario no le
+  convenció y pidió quitarla. Ya no existe en el código. **Lección:** los acentos
+  decorativos sobre la seda tienden a competir con el contenido; el usuario prefiere la
+  seda limpia + la foto protagonista del hero.
 
 ### Logo (HTML/CSS puro — no hay archivo vectorial en el repo)
 
