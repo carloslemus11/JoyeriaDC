@@ -103,6 +103,21 @@
       radial-gradient(75% 65% at 50% 45%, var(--silk-blush), transparent 68%),
       linear-gradient(160deg, var(--bg) 0%, var(--bg-alt) 100%);
   }
+
+  /* Fondo de seda: UN solo elemento fijo detrás de todo. A diferencia de
+     background-attachment:fixed (que iOS Safari ignora), position:fixed sobre
+     un elemento real SÍ funciona en iPhone → la seda es una tela continua en
+     todos los navegadores, sin costuras entre secciones. Cada sección solo
+     lleva el tinte translúcido (--silk-photo-ivory) y deja ver esta capa. */
+  .page-silk{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-color:var(--surface);   /* fallback sólido si la foto no carga */
+    background-image:var(--photo-ivory);
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+  }
+  main, footer{ position:relative; z-index:1; }
   .silk-alt{
     background-color:var(--bg-alt);
     background-image:
@@ -185,13 +200,14 @@
       position:fixed; inset:64px 0 0 0; flex-direction:column;
       justify-content:flex-start; padding:32px 28px; gap:26px; transform:translateX(100%);
       transition:transform .32s ease;
-      /* Mismo fondo de seda que el hero, para que el menú abierto se vea igual al inicio. */
-      background-color:var(--bg);
+      /* Copia opaca de la misma seda (mismo encuadre center/cover que .page-silk)
+         para tapar el contenido de la página detrás del menú y verse continuo. */
+      background-color:var(--surface);
       background-image:
         linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
         var(--photo-ivory);
       background-size:cover, cover;
-      background-position:center, 50% 12%;
+      background-position:center, center;
       background-repeat:no-repeat, no-repeat;
     }
     .nav-links.is-open{transform:translateX(0);}
@@ -201,22 +217,13 @@
   }
 
   /* ---------- hero ---------- */
-  /* El hero ocupa todo el ancho, como las <section>, y su contenido se limita
-     con .hero-inner. La foto de seda se fija al viewport (fondo compartido por
-     hero + todas las secciones, ver .hero, #coleccion, .atelier, .loc, footer):
-     así el fondo es UNA sola tela continua de arriba a abajo, sin líneas ni
-     costuras entre bloques. En móvil, Safari iOS ignora "fixed" y cae a
-     "scroll" (aceptable: se scrollea rápido y sigue siendo la misma seda). */
+  /* El hero ocupa todo el ancho, como las <section>; su contenido se limita con
+     .hero-inner. El fondo es solo el tinte translúcido: la seda continua la pone
+     .page-silk (elemento fijo detrás de todo). Igual en #coleccion, .atelier,
+     .loc y footer → una sola tela, sin costuras, también en iPhone. */
   .hero{
     position:relative; padding:196px 0 120px; overflow:hidden;
-    background-color:var(--surface);
-    background-image:
-      linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
-      var(--photo-ivory);
-    background-size:cover, cover;
-    background-position:center, center;
-    background-repeat:no-repeat, no-repeat;
-    background-attachment:scroll, fixed;
+    background:var(--silk-photo-ivory);
   }
   .hero-inner{
     position:relative; z-index:1;
@@ -276,15 +283,8 @@
   /* ---------- collection ---------- */
   #coleccion{
     position:relative;
-    background-color:var(--surface);
-    background-image:
-      radial-gradient(60% 55% at 90% 100%, var(--emerald-veil), transparent 70%),
-      linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
-      var(--photo-ivory);
-    background-size:cover, cover, cover;
-    background-position:center, center, center;
-    background-repeat:no-repeat, no-repeat, no-repeat;
-    background-attachment:scroll, scroll, fixed;   /* seda fija = fondo continuo, sin costura con el hero */
+    background-color:var(--silk-photo-ivory);   /* tinte translúcido; la seda la pone .page-silk */
+    background-image:radial-gradient(60% 55% at 90% 100%, var(--emerald-veil), transparent 70%);
   }
   .section-head{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:56px; flex-wrap:wrap;}
   .cat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border);}
@@ -328,14 +328,7 @@
   /* ---------- atelier ---------- */
   .atelier{
     position:relative;
-    background-color:var(--surface);
-    background-image:
-      linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
-      var(--photo-ivory);
-    background-size:cover, cover;
-    background-position:center, center;
-    background-repeat:no-repeat, no-repeat;
-    background-attachment:scroll, fixed;
+    background:var(--silk-photo-ivory);
   }
   .story{padding:44px 0;}
   .story:not(:last-child){border-bottom:1px solid var(--border);}
@@ -365,14 +358,7 @@
   /* ---------- location ---------- */
   .loc{
     position:relative;
-    background-color:var(--surface);
-    background-image:
-      linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
-      var(--photo-ivory);
-    background-size:cover, cover;
-    background-position:center, center;
-    background-repeat:no-repeat, no-repeat;
-    background-attachment:scroll, fixed;
+    background:var(--silk-photo-ivory);
   }
   .loc-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;}
   @media (max-width:860px){ .loc-grid{grid-template-columns:1fr;} }
@@ -409,15 +395,8 @@
 
   /* ---------- footer ---------- */
   footer{
-    padding:64px 0 40px; position:relative;
-    background-color:var(--surface);
-    background-image:
-      linear-gradient(var(--silk-photo-ivory), var(--silk-photo-ivory)),
-      var(--photo-ivory);
-    background-size:cover, cover;
-    background-position:center, center;
-    background-repeat:no-repeat, no-repeat;
-    background-attachment:scroll, fixed;
+    padding:64px 0 40px; position:relative; z-index:1;
+    background:var(--silk-photo-ivory);
   }
   .foot-grid{display:flex; justify-content:space-between; gap:40px; flex-wrap:wrap;}
   .foot-brand p{margin-top:12px; color:var(--muted); font-size:13.5px; max-width:32ch;}
