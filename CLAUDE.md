@@ -203,8 +203,10 @@ como data-URI; hay variante clara y oscura como el resto de fotos del CSS) repet
 `repeat-y`. `.chain-drape` se rota con `transform:rotate(-83deg)` y `transform-origin:top
 left`; su alto va en `vw` para que la punta llegue al borde sin pasarse. `body`/`html`
 llevan `overflow-x:clip` por si la diagonal se sale. Visible en todos los tamaños (más fina
-y con menos opacidad en móvil). Se decidió con el usuario tras 2 iteraciones de preview
-(quería algo "sutil" pero que se leyera como cadena; quedó en ~50% de opacidad).
+en móvil). Tras varias iteraciones el usuario la quiso **claramente visible** (no un
+detalle al fondo): eslabón grande, trazo grueso, oro más oscuro (`#8A6231`) y opacidad
+~0.8–0.85 (algo menos en móvil). Para subirla/bajarla es solo el `opacity` de
+`.chain-accent` / `.chain-drape` y sus media queries.
 
 ### Logo (HTML/CSS puro — no hay archivo vectorial en el repo)
 
