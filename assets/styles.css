@@ -550,11 +550,11 @@
   .gallery-hint{
     display:inline-flex; align-items:center; gap:6px;
     font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--gold-strong); padding:0 16px 14px;
+    color:var(--gold-strong); padding:2px 16px 18px;
   }
   .gallery-hint::before{content:"\2922"; font-size:13px; line-height:1;}
-  .gallery-cta{margin:0 16px 16px; align-self:flex-start;}
   .gallery-item .gallery-tag, .gallery-item .gallery-link{display:none;}
+  .gallery-cta-wrap{display:flex; justify-content:center; margin-top:36px;}
 
   /* --- 2. Vista ampliada de la pieza (modal) --- */
   body.modal-open{overflow:hidden;}

@@ -157,15 +157,6 @@ function renderPiezas(grid, piezas, catMap) {
     });
     cell.appendChild(trigger);
 
-    var cta = el("a", {
-      class: "btn btn-fill btn-sm gallery-cta wa-link", href: "#",
-      "data-wa-msg": "Hola, quiero comprar/cotizar: " + pieza.nombre + ".",
-      "data-cotiza": pieza.nombre, "data-cotiza-origen": "galeria",
-      "data-pieza-id": pieza.id,
-      target: "_blank", rel: "noopener"
-    }, textoCta(pieza));
-    cell.appendChild(cta);
-
     grid.appendChild(cell);
   });
   grid.removeAttribute("data-estado");
