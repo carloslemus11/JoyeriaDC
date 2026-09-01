@@ -163,7 +163,7 @@ Sigue siendo HTML/CSS puro (no hay archivo de logo vectorial en el repo). El **2
 - **Diamante en el cruce** (`.logo-gem`, solo en el hero): rombo/marquesa con `clip-path`, gradiente blanco→`--rose`→`--gold-strong`, `position:absolute` sobre la junta D/C.
 - Debajo (sin cambios): línea dorada fina (`.logo-rule`), "18K" en cursiva, "Amor, arte y estilo" en mono con tracking amplio.
 - Dos tamaños: grande en el hero (`.logo-lockup` con el diamante) y el badge circular de la nav (`.brand-mark`, 52px, sin diamante — muy chico; solape más suave para que la C se lea).
-- Si algún día se quiere el logo real como imagen, hace falta un PNG/SVG **con fondo transparente** (el que mandó el usuario tiene la seda de fondo horneada).
+- Si algún día se quiere el logo real como imagen, hace falta un PNG/SVG **con fondo transparente** (el de referencia tiene la seda de fondo horneada). El logo de referencia que mandó el usuario está en `IMAGENES JOYAS/Logo/logo-referencia-dc.png` (1536×1024, fondo de seda).
 
 ### Layout / componentes
 - Nav fija con blur al hacer scroll (clase `.is-scrolled`), menú hamburguesa en móvil.
