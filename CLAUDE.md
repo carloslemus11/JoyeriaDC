@@ -360,10 +360,12 @@ requerir abrir sesión nueva para aparecer listadas.
   - **Precios: descartados** — el usuario confirmó mantener el sitio sin precios.
   - **Garantía:** 6 meses por defectos de fabricación + primera limpieza sin costo. Si los
     términos cambian, se editan desde `/admin` → "Textos" → "Garantía".
-- **Insignia flotante "Powered by Netlify":** el usuario la reportó en móvil. No está en el
-  código ni aparece en el preview local; Netlify no la inyecta por defecto en sitios
-  normales. Si reaparece en producción, revisar en el dashboard de Netlify (Site settings)
-  o confirmar que no sea una extensión del navegador del usuario.
+- **Insignia flotante "Powered by Netlify"** (`<iframe id="nl-badge-frame">`): la inyecta
+  Netlify en el edge (por eso no está en el repo y solo se ve en producción, no en local).
+  Activa por defecto en proyectos del plan Free creados después del 2026-08-19. **No se
+  puede quitar por CSS** (va en un frame aislado). Se apaga en el dashboard: Netlify →
+  Project configuration → General → "Powered by Netlify badge" → off → Save. Requiere la
+  sesión del dueño. Ref: <https://docs.netlify.com/manage/projects/powered-by-netlify-badge/>
 - **Supabase Auth (dashboard):** desactivar "Allow new users to sign up"; poner Site URL;
   (opcional, solo Pro) "Leaked password protection". Ver `supabase/setup.md`.
 - **Dominio propio `joyeriadc.com`** — el usuario lo hará más adelante. Recomendado:
