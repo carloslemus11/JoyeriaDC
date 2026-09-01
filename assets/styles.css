@@ -677,3 +677,58 @@
   .loc-visual{padding:0; background:var(--bg-alt);}
   .loc-visual iframe{width:100%; height:100%; border:0; display:block;}
   @media (max-width:860px){ .loc-visual{aspect-ratio:16/10;} }
+
+  /* ===================================================================
+     Cadena protagonista sobre la seda: cruza el hero en diagonal y luego
+     baja recta por el borde derecho toda la página. Elemento decorativo
+     (dos <div> en background-image), detrás del contenido (z-index:0),
+     como .page-silk. (2026-09-01)
+     =================================================================== */
+  :root{
+    --chain-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='74' viewBox='0 0 46 74'%3E%3Cellipse cx='23' cy='17' rx='11' ry='16' fill='none' stroke='%239C7548' stroke-width='3'/%3E%3Cellipse cx='23' cy='57' rx='16' ry='11' fill='none' stroke='%239C7548' stroke-width='3'/%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --chain-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='74' viewBox='0 0 46 74'%3E%3Cellipse cx='23' cy='17' rx='11' ry='16' fill='none' stroke='%23F1CDA2' stroke-width='3'/%3E%3Cellipse cx='23' cy='57' rx='16' ry='11' fill='none' stroke='%23F1CDA2' stroke-width='3'/%3E%3C/svg%3E");
+    }
+  }
+  :root[data-theme="dark"]{
+    --chain-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='74' viewBox='0 0 46 74'%3E%3Cellipse cx='23' cy='17' rx='11' ry='16' fill='none' stroke='%23F1CDA2' stroke-width='3'/%3E%3Cellipse cx='23' cy='57' rx='16' ry='11' fill='none' stroke='%23F1CDA2' stroke-width='3'/%3E%3C/svg%3E");
+  }
+
+  html{overflow-x:clip;}
+  body{position:relative; overflow-x:clip;}
+
+  /* Tramo recto: baja por el borde derecho toda la página */
+  .chain-accent{
+    position:absolute; top:0; bottom:0; right:28px; width:46px; z-index:0;
+    background-image:var(--chain-link);
+    background-repeat:repeat-y;
+    background-size:46px 74px;
+    background-position:top center;
+    opacity:.5;
+    pointer-events:none;
+  }
+
+  /* Tramo en diagonal: cruza el hero de lado a lado y su punta derecha
+     entronca con el tramo recto que baja por el borde. */
+  .chain-drape{
+    position:absolute; top:100px; left:16px; width:44px; height:94vw; z-index:0;
+    background-image:var(--chain-link);
+    background-repeat:repeat-y;
+    background-size:44px 70px;
+    background-position:top center;
+    transform:rotate(-83deg);
+    transform-origin:top left;
+    opacity:.48;
+    pointer-events:none;
+  }
+
+  @media (max-width:960px){
+    .chain-accent{width:30px; right:6px; background-size:30px 48px; opacity:.46;}
+    .chain-drape{top:146px; left:12px; height:92vw; width:30px; background-size:30px 48px; transform:rotate(-80deg); opacity:.44;}
+  }
+  @media (max-width:520px){
+    .chain-accent{width:19px; right:2px; background-size:19px 30px; opacity:.4;}
+    .chain-drape{top:124px; left:6px; height:90vw; width:19px; background-size:19px 30px; transform:rotate(-76deg); opacity:.38;}
+  }

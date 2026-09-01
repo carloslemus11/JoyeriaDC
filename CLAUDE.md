@@ -193,6 +193,19 @@ líneas ni costuras entre secciones, en todos los navegadores incluido iPhone.**
 - Al usuario le gusta **un solo tono/foto consistente en toda la página**, aunque un pedido
   inicial suyo diga "alternar". Ante un cambio de fondo, confirmar en vez de asumir.
 
+### Cadena decorativa sobre la seda
+
+Encima de `.page-silk` (y detrás del contenido, `z-index:0`) hay una **cadena de eslabones
+de oro dibujada en CSS** que cruza el hero en diagonal y luego baja recta por el borde
+derecho **toda la página**. Dos `<div>` (`.chain-drape` diagonal, `.chain-accent` recto),
+ambos con `background-image:var(--chain-link)` (SVG de dos elipses = un eslabón, embebido
+como data-URI; hay variante clara y oscura como el resto de fotos del CSS) repetido en
+`repeat-y`. `.chain-drape` se rota con `transform:rotate(-83deg)` y `transform-origin:top
+left`; su alto va en `vw` para que la punta llegue al borde sin pasarse. `body`/`html`
+llevan `overflow-x:clip` por si la diagonal se sale. Visible en todos los tamaños (más fina
+y con menos opacidad en móvil). Se decidió con el usuario tras 2 iteraciones de preview
+(quería algo "sutil" pero que se leyera como cadena; quedó en ~50% de opacidad).
+
 ### Logo (HTML/CSS puro — no hay archivo vectorial en el repo)
 
 El **2026-09-01** el usuario compartió un logo de referencia
