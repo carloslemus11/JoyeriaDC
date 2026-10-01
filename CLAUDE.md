@@ -34,7 +34,7 @@ JOYERIA.DC./
 │   ├── catalogo.js             # Lectura del catálogo (categorías/piezas/fotoUrl)
 │   ├── interacciones.js        # Sugerencias + registro de cotizaciones + registro de visitas
 │   ├── contenido.js            # Textos editables del sitio ([data-cs])
-│   └── piezas/                 # Fotos de piezas (16 al 2026-10-01; las 9 originales también
+│   └── piezas/                 # Fotos de piezas (15 al 2026-10-01; las 9 originales también
 │                                #   en Storage, las 7 nuevas sirven de aquí hasta importarlas)
 ├── admin/
 │   ├── index.html              # Panel: tabs Piezas / Categorías / Sugerencias / Cotizaciones / Visitas / Textos
@@ -338,7 +338,7 @@ solo con la D y la C, sin tocar los colores de fondo". Estado actual:
 
 ## Fuentes de las fotos
 
-### Producto (16 piezas en el catálogo, al 2026-10-01)
+### Producto (15 piezas en el catálogo, al 2026-10-01)
 Las **9 originales** están en `IMAGENES JOYAS/Versiones para web/` (recortes optimizados) y
 como respaldo en `assets/piezas/`; ya viven en el bucket de Storage `piezas/catalogo/*` y el
 sitio las sirve desde ahí (`pieza_fotos.storage_path`). Dos incluyen marca de agua real
@@ -360,15 +360,14 @@ a JPEG ~675×900 y guardadas en `assets/piezas/` con el mismo convenio
 |---|---|---|
 | Conjunto esmeralda (aretes, collar y anillo) | Dijes y accesorios | `conjunto-esmeralda.jpeg` |
 | Cadena con crucifijo | Cadenas | `cadena-crucifijo.jpeg` |
-| Cadena con crucifijo clásica | Cadenas | `cadena-crucifijo-clasica.jpeg` |
 | Rosario con dije de Virgen | Cadenas | `rosario-virgen.jpeg` |
 | Collar con dije de piedra verde | Cadenas | `collar-piedra-verde.jpeg` |
 | Pulsera y anillo de mariposas | Pulseras | `pulsera-mariposas.jpeg` |
 | Anillo de corazón con piedra | Anillos | `anillo-corazon-piedra.jpeg` |
 
-Nota: "Cadena con crucifijo" y "Cadena con crucifijo clásica" se ven muy parecidas en foto
-— confirmar con el usuario si son dos piezas distintas o la misma fotografiada dos veces;
-si es la misma, borrar una desde `/admin` → Piezas.
+(Originalmente eran 7: "Cadena con crucifijo clásica" era la misma pieza que "Cadena con
+crucifijo" fotografiada dos veces — el usuario lo confirmó el 2026-10-01 y se borró, junto
+con `cadena-crucifijo-clasica.jpeg`. Catálogo actual: 15 piezas.)
 
 ### Textura de seda
 Dos fotos de stock (Pexels) que subió el usuario, en `IMAGENES JOYAS/Texturas de seda/`
