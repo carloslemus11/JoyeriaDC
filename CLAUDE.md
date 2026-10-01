@@ -34,7 +34,8 @@ JOYERIA.DC./
 │   ├── catalogo.js             # Lectura del catálogo (categorías/piezas/fotoUrl)
 │   ├── interacciones.js        # Sugerencias + registro de cotizaciones + registro de visitas
 │   ├── contenido.js            # Textos editables del sitio ([data-cs])
-│   └── piezas/                 # Respaldo de las 9 fotos (ya en Storage; el sitio NO las sirve)
+│   └── piezas/                 # Fotos de piezas (16 al 2026-10-01; las 9 originales también
+│                                #   en Storage, las 7 nuevas sirven de aquí hasta importarlas)
 ├── admin/
 │   ├── index.html              # Panel: tabs Piezas / Categorías / Sugerencias / Cotizaciones / Visitas / Textos
 │   ├── admin.css
@@ -77,7 +78,9 @@ JOYERIA.DC./
   (`private.is_admin()` = tener fila en `public.perfiles` con `rol='admin'`). Hoy hay **un
   solo usuario**: `cjlr0318@gmail.com` (el dueño).
 - **Bucket de Storage `piezas`** (lectura pública, escritura solo admin) — sirve las 9 fotos
-  del catálogo desde `piezas/catalogo/*`.
+  originales del catálogo desde `piezas/catalogo/*`. Las 7 piezas agregadas el 2026-10-01
+  todavía sirven desde `assets/piezas/` (respaldo del sitio) hasta que se usen "Importar
+  fotos iniciales" en `/admin`.
 - **Función RPC:** `public.resumen_visitas()` (SECURITY INVOKER, solo `authenticated`) —
   agrega el panel de Visitas (hoy, 30 días, por día, por fuente/dispositivo/país).
 - **Pendientes manuales en el dashboard** (no se pueden por API) — ver `supabase/setup.md`:
@@ -85,6 +88,37 @@ JOYERIA.DC./
      todavía sigue activo, hay que apagarlo).
   2. Site URL = `https://joyeriadc.netlify.app` en Authentication → URL Configuration.
   3. Activar "Leaked password protection" (Attack Protection) — solo plan Pro; opcional.
+
+### Incidente — proyecto pausado por inactividad (2026-10-01)
+
+El proyecto (plan Free) se pausó tras ~1 mes sin actividad; el dominio
+`ardfyksmwwwignoejaft.supabase.co` llegó a no resolver por DNS y el catálogo del sitio
+quedó caído (errores `TypeError: Failed to fetch` en consola). El usuario lo reanudó desde
+el dashboard de Supabase. **Lección para la próxima vez que esto pase:**
+
+- Tras reanudar, **el dominio y el servicio de Postgres vuelven primero; los datos
+  (`public.*`, `auth.users`, Storage) pueden tardar varios minutos más en repropagarse** —
+  un `list_tables` justo después de reanudar puede mostrar el schema `public` vacío sin que
+  el proyecto esté realmente en blanco. Antes de asumir que hay que reconstruir desde cero,
+  esperar unos minutos y volver a chequear.
+- Esa vez no se esperó: se corrieron `schema.sql` → `policies.sql` → `storage.sql` →
+  `funciones.sql` → `seed-catalogo.sql` contra lo que parecía un proyecto vacío, y a mitad
+  de camino los datos originales terminaron de repropagarse por su cuenta. Resultado: las
+  9 piezas quedaron duplicadas (18) porque el `insert` del seed no es idempotente (a
+  diferencia de `categorias`, que sí tiene `on conflict (slug) do nothing`). Se arregló
+  dedupeando por `nombre` y quedándose con el `created_at` más antiguo (las filas
+  originales, del 2026-08-31, con fotos ya subidas a Storage) — los `pieza_fotos`
+  asociados a los duplicados se fueron solos por el `on delete cascade`.
+  Las políticas de Storage sí fallaron ruidosamente en el reintento ("already exists") en
+  vez de duplicarse, porque `create policy` no tolera nombres repetidos — ese error fue la
+  pista de que el dato original ya había vuelto.
+  `auth.users` / `public.perfiles` (login admin), `visitas` (150 filas), `cotizaciones` (4)
+  y `contenido_sitio` (20 claves) **se recuperaron solos**, sin tocar nada — no hizo falta
+  recrear el usuario admin ni perder el historial de tráfico.
+- **Si vuelve a pasar:** confirmar primero con `select count(*) from auth.users` (o
+  similar) separado por un par de minutos de espera antes de correr cualquier migración de
+  reconstrucción. Si tras esperar sigue en cero, ahí sí se asume borrado y se reconstruye
+  desde `supabase/*.sql` como dice el comentario de cabecera de `schema.sql`.
 
 ### Cómo llegamos acá (historia condensada)
 
@@ -304,13 +338,37 @@ solo con la D y la C, sin tocar los colores de fondo". Estado actual:
 
 ## Fuentes de las fotos
 
-### Producto (las 9 del catálogo)
-Están en `IMAGENES JOYAS/Versiones para web/` (recortes optimizados) y como respaldo en
-`assets/piezas/`. Ya viven en el bucket de Storage `piezas/catalogo/*` y el sitio las sirve
-desde ahí (`pieza_fotos.storage_path`). `fotoUrl()` en `catalogo.js` resuelve `assets/…` o
-`/…` como archivo del sitio y el resto como objeto de Storage. Dos incluyen marca de agua
-real (`@joyeriadc__` / logo "DC") → son fotos propias del negocio, no stock. Para más
-ángulos de una pieza: `IMAGENES JOYAS/Fotos originales por producto/`.
+### Producto (16 piezas en el catálogo, al 2026-10-01)
+Las **9 originales** están en `IMAGENES JOYAS/Versiones para web/` (recortes optimizados) y
+como respaldo en `assets/piezas/`; ya viven en el bucket de Storage `piezas/catalogo/*` y el
+sitio las sirve desde ahí (`pieza_fotos.storage_path`). Dos incluyen marca de agua real
+(`@joyeriadc__` / logo "DC") → son fotos propias del negocio, no stock. Para más ángulos de
+una pieza: `IMAGENES JOYAS/Fotos originales por producto/`.
+
+`fotoUrl()` en `catalogo.js` resuelve `assets/…` o `/…` como archivo del sitio y el resto
+como objeto de Storage.
+
+**7 piezas nuevas (2026-10-01):** el usuario las guardó directo en `IMAGENES JOYAS/` de la
+carpeta principal del repo (no en un worktree) — confirmó que son piezas reales que tiene
+disponibles, aunque varias llegaron con nombre de archivo de generador de IA
+(`studio_product_shot_...`, `a_close_up_...`); se le preguntó antes de subirlas. Procesadas
+a JPEG ~675×900 y guardadas en `assets/piezas/` con el mismo convenio
+`storage_path = 'assets/piezas/<archivo>.jpeg'` (sin subir a Storage todavía — lo hace
+"Importar fotos iniciales" en `/admin` cuando se use):
+
+| Pieza | Categoría | Archivo |
+|---|---|---|
+| Conjunto esmeralda (aretes, collar y anillo) | Dijes y accesorios | `conjunto-esmeralda.jpeg` |
+| Cadena con crucifijo | Cadenas | `cadena-crucifijo.jpeg` |
+| Cadena con crucifijo clásica | Cadenas | `cadena-crucifijo-clasica.jpeg` |
+| Rosario con dije de Virgen | Cadenas | `rosario-virgen.jpeg` |
+| Collar con dije de piedra verde | Cadenas | `collar-piedra-verde.jpeg` |
+| Pulsera y anillo de mariposas | Pulseras | `pulsera-mariposas.jpeg` |
+| Anillo de corazón con piedra | Anillos | `anillo-corazon-piedra.jpeg` |
+
+Nota: "Cadena con crucifijo" y "Cadena con crucifijo clásica" se ven muy parecidas en foto
+— confirmar con el usuario si son dos piezas distintas o la misma fotografiada dos veces;
+si es la misma, borrar una desde `/admin` → Piezas.
 
 ### Textura de seda
 Dos fotos de stock (Pexels) que subió el usuario, en `IMAGENES JOYAS/Texturas de seda/`
