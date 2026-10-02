@@ -36,7 +36,7 @@ function observeReveal(els) {
           revealObserver.unobserve(entry.target);
         }
       });
-    }, { threshold: .15 });
+    }, { threshold: 0, rootMargin: "0px 0px -40px 0px" });
   }
   els.forEach(function (el) { revealObserver.observe(el); });
 }
