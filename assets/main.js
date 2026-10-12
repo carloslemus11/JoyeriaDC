@@ -241,6 +241,7 @@ function cerrarPieza() {
 
 function renderCatalogoError(catGrid, galleryGrid) {
   [catGrid, galleryGrid].forEach(function (g) { if (g) g.innerHTML = ""; });
+  if (catGrid) catGrid.setAttribute("data-estado", "error");
   if (!galleryGrid) return;
   galleryGrid.setAttribute("data-estado", "error");
   var box = el("div", { class: "catalogo-error" });

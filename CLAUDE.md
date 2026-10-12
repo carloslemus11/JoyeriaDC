@@ -22,6 +22,8 @@ Sitio estático multi-archivo (sin build step) con backend en **Supabase** (Post
 JOYERIA.DC./
 ├── index.html                  # Sitio público (solo marcado; CSS y JS en assets/)
 ├── 404.html
+├── favicon.ico                 # Favicon (monograma DC); también assets/favicon.svg, favicon-32.png, apple-touch-icon.png
+├── robots.txt / sitemap.xml    # SEO básico (URL absoluta del dominio: ver 'Dominio propio' en Pendiente)
 ├── README.md                   # Correr local, configurar Supabase, publicar en Netlify
 ├── netlify.toml                # Deploy: publish=".", sin build, cabeceras, edge functions
 ├── CLAUDE.md                   # Este archivo
@@ -41,8 +43,10 @@ JOYERIA.DC./
 │   ├── admin.css
 │   └── admin.js                # Login correo/contraseña + gate de rol admin (public.perfiles)
 ├── netlify/
-│   └── edge-functions/
-│       └── geo-pais.js         # Inyecta <meta name="dc-pais"> con el país aproximado (para las visitas)
+│   ├── edge-functions/
+│   │   └── geo-pais.js         # Inyecta <meta name="dc-pais"> con el país aproximado (para las visitas)
+│   └── functions/
+│       └── keepalive-supabase.mjs   # Función PROGRAMADA (cada 2 días): consulta el catálogo para que Supabase Free no se pause
 ├── supabase/
 │   ├── schema.sql              # Tablas (fuente de verdad del esquema)
 │   ├── policies.sql            # RLS + políticas + private.is_admin()
@@ -115,6 +119,19 @@ el dashboard de Supabase. **Lección para la próxima vez que esto pase:**
   `auth.users` / `public.perfiles` (login admin), `visitas` (150 filas), `cotizaciones` (4)
   y `contenido_sitio` (20 claves) **se recuperaron solos**, sin tocar nada — no hizo falta
   recrear el usuario admin ni perder el historial de tráfico.
+- **Segunda pausa (detectada el 2026-10-11, ~10 días después de reanudar).** Misma
+  señal: `NXDOMAIN` en el dominio, REST/Storage sin respuesta, SQL por MCP con timeout.
+  **Causa (docs oficiales de Supabase, "Project Pausing"):** un proyecto Free se pausa cuando
+  tiene poca actividad de base de datos durante **7 días** (no ~1 mes como se creía:
+  "típicamente basta con unas pocas peticiones al día durante la semana previa"). Cuenta
+  como actividad: peticiones a la API, peticiones de la app conectada o abrir el proyecto en
+  el dashboard. Supabase manda un correo de aviso ~1 semana antes y otro al pausarse. Se
+  puede restaurar hasta 1 año después ("Resume project"). Los planes de pago no se pausan.
+  El sitio genera pocas consultas (visitas solo cuando alguien entra), por eso caía bajo el
+  umbral. **Mitigación:** `netlify/functions/keepalive-supabase.mjs` (función programada de
+  Netlify, `0 15 */2 * *`) hace una lectura real de `piezas` cada 2 días. Alternativa
+  definitiva: plan Pro. Si la función no está corriendo (Netlify → Functions / Logs),
+  revisar que el deploy la haya incluido.
 - **Si vuelve a pasar:** confirmar primero con `select count(*) from auth.users` (o
   similar) separado por un par de minutos de espera antes de correr cualquier migración de
   reconstrucción. Si tras esperar sigue en cero, ahí sí se asume borrado y se reconstruye
@@ -420,7 +437,7 @@ requerir abrir sesión nueva para aparecer listadas.
   links, texto de relleno, imágenes, tono). Prueba en el navegador real; si falla, cae a
   análisis estático y lo dice. Entrega el reporte priorizado (Crítico→Bajo) en el chat **y**
   lo acumula con fecha en `revision-final.md`. **No corrige nada** — solo reporta hasta que
-  el usuario apruebe. Todavía no se ha corrido ni una vez.
+  el usuario apruebe. Primera corrida el 2026-10-11 (ver `revision-final.md`).
 
 ## Pendiente / en curso
 
@@ -449,7 +466,17 @@ requerir abrir sesión nueva para aparecer listadas.
   comprarlo a través de Netlify (Domain management → Add a domain → Buy) que configura DNS +
   SSL solo. Después: cambiar el Site URL de Supabase Auth a `https://joyeriadc.com` y
   agregar `https://joyeriadc.com/**` a Redirect URLs. El código del sitio no cambia (no hay
-  URLs de `netlify.app` hardcodeadas).
+  URLs de `netlify.app` hardcodeadas) **salvo** `canonical`/`og:*` en `index.html`, `robots.txt`
+  y `sitemap.xml`, que llevan `https://joyeriadc.netlify.app` — hay que actualizarlos al dominio nuevo.
 - **Sitio Netlify huérfano `elaborate-genie-98e47c`** (de una prueba de deploy) — se puede
   borrar.
-- **`revision-final`** todavía no se ha corrido — buen momento ahora que está en producción.
+- **Revisión final (2026-10-11):** hecha; los hallazgos de código están corregidos (favicon,
+  Open Graph, contraste, blancos táctiles, estado de error de categorías, robots/sitemap,
+  keep-alive). **Siguen pendientes manuales:** (1) reanudar Supabase si está pausado,
+  (2) apagar la insignia "Powered by Netlify" (tapa el botón de WhatsApp), (3) confirmar
+  con el dueño estas afirmaciones del sitio: "1.700+ seguidores" (cifra fija; editable en
+  `/admin` → Textos) y "cada compra se respalda con su factura" (Garantía/FAQ). Se quitó
+  "piezas nuevas cada semana" por no estar confirmado.
+- **Worktrees viejos** en `.claude/worktrees/` (`frosty-archimedes-7cd038`,
+  `jewelry-interface-improvements-fdc74c`): no se despliegan; pertenecen a sesiones de
+  Claude Code anteriores — archivarlas desde la app los limpia.

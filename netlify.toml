@@ -5,6 +5,11 @@
   publish = "."
   command = ""
 
+# Función programada: consulta Supabase cada 2 días para que el plan Free no lo pause por
+# inactividad. El archivo vive en netlify/functions/keepalive-supabase.mjs.
+[functions]
+  directory = "netlify/functions"
+
 # El sitio sirve https://<sitio>/admin/ desde admin/index.html automáticamente.
 
 # Edge Function: agrega <meta name="dc-pais"> con el país aproximado del visitante
