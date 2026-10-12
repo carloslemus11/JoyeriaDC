@@ -60,3 +60,29 @@ Cada sección la agrega el skill `revision-final`. Solo reporta; no corrige nada
 - **Mapa incrustado de Google Maps y tipografías de Google Fonts:** el navegador integrado bloquea los recursos de terceros (`ERR_BLOCKED_BY_CLIENT`), así que no se vio el mapa ni las fuentes reales.
 - **Envío del formulario de sugerencias:** no se envió (escribiría en la base de datos y, además, está caída).
 - **Login de `/admin`:** solo se vio que la pantalla carga; no se probó el inicio de sesión (credenciales del dueño + Supabase caído).
+
+## Seguimiento — 2026-10-12 (re-verificación en producción tras el push de `9ba92fc`)
+
+**Estado de los hallazgos de la revisión del 2026-10-11:**
+
+| # | Hallazgo | Estado |
+|---|---|---|
+| 1 | Catálogo caído (Supabase pausado) | **Resuelto** — proyecto reanudado; 15 piezas, 15 fotos, 4 categorías, 20 textos, 1 admin y 170 visitas intactos. Causa documentada (7 días con poca actividad; las visitas se cortan el 8-sep y el 3-oct, justo 7 días antes de cada pausa) y función programada `keepalive-supabase` desplegada (existe en producción: 403 al invocarla por URL vs 404 de una función inexistente). **Falta confirmar en Netlify → Logs que corre cada 2 días.** |
+| 2 | Insignia "Powered by Netlify" tapaba el botón de WhatsApp | **Resuelto** — ya no se inyecta; el FAB queda libre (verificado con `elementFromPoint`). |
+| 3 | Categorías sin estado de error | **Resuelto** (probado con Supabase caído: el recuadro vacío ya no aparece). |
+| 4 | Contraste bajo en modo claro | **Resuelto** — todo ≥ 5.4:1; modo oscuro ≥ 6:1 (sin textos bajo 4.5). |
+| 5 | Sin vista previa al compartir | **Resuelto** — Open Graph/Twitter + imagen 1200×630 desplegados. |
+| 6 | Sin favicon | **Resuelto** — svg/png/ico + apple-touch-icon; `/favicon.ico` ahora es el propio (mismo hash). |
+| 7 | Afirmaciones sin verificar | **Parcial** — se quitó "piezas nuevas cada semana". Siguen pendientes de confirmar con el dueño: "1.700+ seguidores" y "cada compra con factura". |
+| 8 | Sin robots.txt / sitemap.xml | **Resuelto** (200 en producción). |
+| 9 | Blancos táctiles chicos | **Resuelto** — 43–44 px en footer y menú móvil. |
+| 10 | Limpieza de repo | **Sin cambios** — los worktrees viejos pertenecen a sesiones anteriores; las 7 imágenes sin versionar son del usuario. |
+
+**Re-verificado sin problemas (producción):** 15/15 fotos cargan (9 desde Storage, 6 desde `assets/piezas/`); 4 categorías; 13/13 enlaces de WhatsApp correctos; modal de pieza (abre, bloquea scroll, atrapa foco, cierra con Escape, mensaje de WhatsApp coherente con la pieza); sin scroll horizontal en 375 px ni 1280 px; cero errores de consola en `/` y `/admin/`; login de `/admin` carga y Supabase responde 200; encabezados de seguridad y `noindex` en `/admin/`; página 404 propia.
+
+**Hallazgos nuevos de esta pasada:**
+- **Medio — Archivos internos públicos.** Con `publish = "."` se podían descargar `CLAUDE.md` (incluye el correo del dueño), `README.md`, `supabase/schema.sql` y `policies.sql`, los specs/planes, el código de las funciones y 24 MB de fotos originales (`IMAGENES JOYAS/`, p. ej. el logo de 2 MB). No hay secretos (la clave publishable es pública por diseño). **Corrección preparada** en `netlify.toml` (reglas 404 forzadas); falta desplegarla y comprobarla.
+- **Medio — Fotos que no son del taller.** La sección dice "Fotografiadas en nuestro taller, no en un catálogo genérico", pero varias fotos de las 7 piezas nuevas parecen de generador de IA (modelo en estudio). Decisión del dueño: cambiar el título o usar fotos propias.
+- **Bajo — Documentación desfasada:** `CLAUDE.md` decía que la tarjeta de pieza trae un botón "Cotizar esta pieza"; en realidad solo está en el modal. Corregido.
+
+**No verificado:** envío del formulario de sugerencias (escribiría en la base) e inicio de sesión de `/admin` (credenciales del dueño); las tipografías de Google (el navegador de pruebas bloquea terceros); contraste claro en producción se midió en local con el mismo CSS (la regla `--gold-text` está confirmada en el CSS desplegado).

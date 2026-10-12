@@ -13,6 +13,11 @@ Sitio estático multi-archivo (sin build step) con backend en **Supabase** (Post
 - **Deploy:** el sitio Netlify `joyeriadc` está conectado al repo GitHub → **cada `git push`
   a `main` redespliega solo** (build vacío, `publish = "."`, incluye `netlify/edge-functions/`).
   El push usa un token guardado en el osxkeychain del Mac del usuario.
+- **Archivos internos bloqueados:** como `publish = "."` publica la raíz del repo, `netlify.toml`
+  responde 404 (force) para `CLAUDE.md`, `README.md`, `revision-final.md`, `/docs/*`,
+  `/supabase/*`, `/netlify/*` e `IMAGENES JOYAS/*` (antes se podían descargar, incluido el
+  correo del dueño y el esquema/políticas de la base). Si se agregan carpetas internas
+  nuevas, añadirles su regla.
 - Como `main.js`/`admin.js` son **módulos ES**, el sitio debe servirse por HTTP (server
   local o Netlify); no funciona abriendo el `.html` con `file://`.
 
@@ -301,7 +306,7 @@ solo con la D y la C, sin tocar los colores de fondo". Estado actual:
 | Nav | — | Logo + "Joyería DC", links (Colección / Atelier / Preguntas / Ubicación), botón "Cotizar" |
 | Hero | `#top` | Titular, bajada, CTAs, fila de stats (18K / seguidores IG / local), **foto protagonista de una pieza** (`assets/hero-joya.jpeg`) + monograma DC pequeño con diamante debajo (`.hero-visual` / `.logo-lockup--sm`) |
 | Franja de confianza | — | `.trust-strip` tras el hero: 5 mensajes con ícono (Oro 18K · compra presencial en Ibagué · atención personalizada · garantía 6 meses · envíos + pagos). Textos con `data-cs="trust1..5"`. No interactiva |
-| Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas, **ambas desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Cada pieza es una tarjeta (`.gallery-item`) con nombre grande, "Categoría · Oro 18K", **etiqueta de disponibilidad** (disponible / por encargo / agotada), botón "Cotizar esta pieza" y disparador de la vista ampliada. "Agotada" atenúa la tarjeta y el botón pasa a "Consultar por WhatsApp". Estados de carga (shimmer) y de error (mensaje + WhatsApp). |
+| Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas, **ambas desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Cada pieza es una tarjeta (`.gallery-item`) con nombre grande, "Categoría · Oro 18K", **etiqueta de disponibilidad** (disponible / por encargo / agotada), pista "Ver pieza" (toda la tarjeta es el disparador de la vista ampliada; **el botón "Cotizar esta pieza" vive en el modal**, no en la tarjeta). "Agotada" atenúa la tarjeta y el botón pasa a "Consultar por WhatsApp". Estados de carga (shimmer) y de error (mensaje + WhatsApp). |
 | Atelier | `#atelier` | 3 bloques "por qué elegirnos" |
 | Preguntas frecuentes | `#faq` | Acordeón `<details>` nativo (sin JS). Respuestas reales: oro 18K, verlas en persona, horario, formas de pago, envíos, garantía (resumen + enlace a `#garantia`) |
 | Garantía | `#garantia` | Texto formal de 4 puntos (autenticidad del oro · defectos de fabricación 6 meses · exclusiones · mantenimiento). Editable desde `/admin` → "Textos". Botón "Preguntar por la garantía" (WhatsApp) |
@@ -472,11 +477,15 @@ requerir abrir sesión nueva para aparecer listadas.
   borrar.
 - **Revisión final (2026-10-11):** hecha; los hallazgos de código están corregidos (favicon,
   Open Graph, contraste, blancos táctiles, estado de error de categorías, robots/sitemap,
-  keep-alive). **Siguen pendientes manuales:** (1) reanudar Supabase si está pausado,
-  (2) apagar la insignia "Powered by Netlify" (tapa el botón de WhatsApp), (3) confirmar
-  con el dueño estas afirmaciones del sitio: "1.700+ seguidores" (cifra fija; editable en
+  keep-alive). Supabase se reanudó el 2026-10-12 (15 piezas/fotos, 20 textos, admin y 170
+  visitas intactos) y la insignia "Powered by Netlify" dejó de inyectarse ese mismo día.
+  **Siguen pendientes:** (1) confirmar con el dueño estas afirmaciones del sitio: "1.700+ seguidores" (cifra fija; editable en
   `/admin` → Textos) y "cada compra se respalda con su factura" (Garantía/FAQ). Se quitó
-  "piezas nuevas cada semana" por no estar confirmado.
+  "piezas nuevas cada semana" por no estar confirmado. (2) Decidir sobre las fotos de las
+  7 piezas nuevas: varias parecen de generador de IA (modelo en estudio) y la sección dice
+  "Fotografiadas en nuestro taller, no en un catálogo genérico" — o se cambia el título o se
+  reemplazan por fotos propias. (3) Verificar en Netlify → Logs → Functions que
+  `keepalive-supabase` corre cada 2 días.
 - **Worktrees viejos** en `.claude/worktrees/` (`frosty-archimedes-7cd038`,
   `jewelry-interface-improvements-fdc74c`): no se despliegan; pertenecen a sesiones de
   Claude Code anteriores — archivarlas desde la app los limpia.
