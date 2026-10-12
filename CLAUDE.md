@@ -479,12 +479,13 @@ requerir abrir sesión nueva para aparecer listadas.
   Open Graph, contraste, blancos táctiles, estado de error de categorías, robots/sitemap,
   keep-alive). Supabase se reanudó el 2026-10-12 (15 piezas/fotos, 20 textos, admin y 170
   visitas intactos) y la insignia "Powered by Netlify" dejó de inyectarse ese mismo día.
-  **Siguen pendientes:** (1) confirmar con el dueño estas afirmaciones del sitio: "1.700+ seguidores" (cifra fija; editable en
-  `/admin` → Textos) y "cada compra se respalda con su factura" (Garantía/FAQ). Se quitó
-  "piezas nuevas cada semana" por no estar confirmado. (2) Decidir sobre las fotos de las
-  7 piezas nuevas: varias parecen de generador de IA (modelo en estudio) y la sección dice
-  "Fotografiadas en nuestro taller, no en un catálogo genérico" — o se cambia el título o se
-  reemplazan por fotos propias. (3) Verificar en Netlify → Logs → Functions que
+  **Siguen pendientes:** (1) "cada compra se respalda con su factura" (Garantía/FAQ): no hay
+  confirmación del dueño. ("1.700+ seguidores" se verificó el 2026-10-12: Instagram mostraba
+  1.731; es cifra fija, actualizar si crece mucho. Se quitó "piezas nuevas cada semana".)
+  (2) Fotos de las 7 piezas nuevas: varias parecen de generador de IA (modelo en estudio).
+  El título de la galería ya NO dice "Fotografiadas en nuestro taller" (ahora: "Algunas de
+  las piezas que encuentras en nuestro local"); si se reemplazan por fotos propias se puede
+  volver a un título más fuerte. (3) Verificar en Netlify → Logs → Functions que
   `keepalive-supabase` corre cada 2 días.
 - **Worktrees viejos** en `.claude/worktrees/` (`frosty-archimedes-7cd038`,
   `jewelry-interface-improvements-fdc74c`): no se despliegan; pertenecen a sesiones de

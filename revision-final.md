@@ -73,7 +73,7 @@ Cada sección la agrega el skill `revision-final`. Solo reporta; no corrige nada
 | 4 | Contraste bajo en modo claro | **Resuelto** — todo ≥ 5.4:1; modo oscuro ≥ 6:1 (sin textos bajo 4.5). |
 | 5 | Sin vista previa al compartir | **Resuelto** — Open Graph/Twitter + imagen 1200×630 desplegados. |
 | 6 | Sin favicon | **Resuelto** — svg/png/ico + apple-touch-icon; `/favicon.ico` ahora es el propio (mismo hash). |
-| 7 | Afirmaciones sin verificar | **Parcial** — se quitó "piezas nuevas cada semana". Siguen pendientes de confirmar con el dueño: "1.700+ seguidores" y "cada compra con factura". |
+| 7 | Afirmaciones sin verificar | **Casi resuelto** — "1.700+ seguidores" verificado (Instagram: 1.731); se quitó "piezas nuevas cada semana". Pendiente de confirmar con el dueño solo: "cada compra con factura". |
 | 8 | Sin robots.txt / sitemap.xml | **Resuelto** (200 en producción). |
 | 9 | Blancos táctiles chicos | **Resuelto** — 43–44 px en footer y menú móvil. |
 | 10 | Limpieza de repo | **Sin cambios** — los worktrees viejos pertenecen a sesiones anteriores; las 7 imágenes sin versionar son del usuario. |
@@ -82,7 +82,7 @@ Cada sección la agrega el skill `revision-final`. Solo reporta; no corrige nada
 
 **Hallazgos nuevos de esta pasada:**
 - **Medio — Archivos internos públicos.** Con `publish = "."` se podían descargar `CLAUDE.md` (incluye el correo del dueño), `README.md`, `supabase/schema.sql` y `policies.sql`, los specs/planes, el código de las funciones y 24 MB de fotos originales (`IMAGENES JOYAS/`, p. ej. el logo de 2 MB). No hay secretos (la clave publishable es pública por diseño). **Corrección preparada** en `netlify.toml` (reglas 404 forzadas); falta desplegarla y comprobarla.
-- **Medio — Fotos que no son del taller.** La sección dice "Fotografiadas en nuestro taller, no en un catálogo genérico", pero varias fotos de las 7 piezas nuevas parecen de generador de IA (modelo en estudio). Decisión del dueño: cambiar el título o usar fotos propias.
+- **Medio — Fotos que no son del taller.** La sección decía "Fotografiadas en nuestro taller, no en un catálogo genérico", pero varias fotos de las 7 piezas nuevas parecen de generador de IA (modelo en estudio). **Corregido el título** ("Algunas de las piezas que encuentras en nuestro local"); reemplazar las fotos por propias sigue siendo decisión del dueño.
 - **Bajo — Documentación desfasada:** `CLAUDE.md` decía que la tarjeta de pieza trae un botón "Cotizar esta pieza"; en realidad solo está en el modal. Corregido.
 
 **No verificado:** envío del formulario de sugerencias (escribiría en la base) e inicio de sesión de `/admin` (credenciales del dueño); las tipografías de Google (el navegador de pruebas bloquea terceros); contraste claro en producción se midió en local con el mismo CSS (la regla `--gold-text` está confirmada en el CSS desplegado).
