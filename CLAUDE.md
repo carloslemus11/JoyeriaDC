@@ -37,8 +37,11 @@ JOYERIA.DC./
 │   ├── styles.css              # TODO el CSS (~240 KB: incluye la textura de seda en base64)
 │   ├── main.js                 # JS del sitio público (módulo ES)
 │   ├── config.js               # SUPABASE_URL + publishable key + WA_NUMBER (público, SÍ se versiona)
-│   ├── supabase-client.js      # Cliente Supabase compartido (sitio + admin) + healthcheck
-│   ├── catalogo.js             # Lectura del catálogo (categorías/piezas/fotoUrl)
+│   ├── supabase-client.js      # Cliente Supabase compartido (sitio + admin) + healthcheck; usa window.supabase
+│   ├── vendor/
+│   │   └── supabase-2.118.0.js # supabase-js (UMD, versión fija) alojado en el sitio — ya NO se carga de esm.sh
+│   ├── catalogo.js             # Lectura del catálogo (categorías/piezas/fotoUrl) + getCatalogo() con respaldo
+│   ├── catalogo-respaldo.json  # Copia estática del catálogo (15 piezas): se usa si Supabase no responde
 │   ├── interacciones.js        # Sugerencias + registro de cotizaciones + registro de visitas
 │   ├── contenido.js            # Textos editables del sitio ([data-cs])
 │   └── piezas/                 # Fotos de piezas (15 al 2026-10-01; las 9 originales también
@@ -51,7 +54,7 @@ JOYERIA.DC./
 │   ├── edge-functions/
 │   │   └── geo-pais.js         # Inyecta <meta name="dc-pais"> con el país aproximado (para las visitas)
 │   └── functions/
-│       └── keepalive-supabase.mjs   # Función PROGRAMADA (cada 2 días): consulta el catálogo para que Supabase Free no se pause
+│       └── keepalive-supabase.mjs   # Función PROGRAMADA (cada 3 h): 3 lecturas + 1 escritura para que Supabase Free no se pause
 ├── supabase/
 │   ├── schema.sql              # Tablas (fuente de verdad del esquema)
 │   ├── policies.sql            # RLS + políticas + private.is_admin()
@@ -133,14 +136,59 @@ el dashboard de Supabase. **Lección para la próxima vez que esto pase:**
   el dashboard. Supabase manda un correo de aviso ~1 semana antes y otro al pausarse. Se
   puede restaurar hasta 1 año después ("Resume project"). Los planes de pago no se pausan.
   El sitio genera pocas consultas (visitas solo cuando alguien entra), por eso caía bajo el
-  umbral. **Mitigación:** `netlify/functions/keepalive-supabase.mjs` (función programada de
-  Netlify, `0 15 */2 * *`) hace una lectura real de `piezas` cada 2 días. Alternativa
-  definitiva: plan Pro. Si la función no está corriendo (Netlify → Functions / Logs),
-  revisar que el deploy la haya incluido.
+  umbral. **Mitigación (insuficiente, ver tercera pausa):** `keepalive-supabase.mjs` con una
+  lectura de `piezas` cada 2 días.
+- **Tercera pausa (2026-10-28 ~10:15 UTC, detectada ese mismo día) — el keep-alive de cada 2
+  días NO bastó.** La función sí corría (logs de Supabase: GET `/rest/v1/piezas` 200 los días
+  15, 17, 19, 21, 23, 25 y 27) y aun así Supabase pausó el proyecto el 28 (en el log de
+  Postgres: `checkpoint ... immediate force wait` + `restore point "restore_<ref>_..."
+  created`, que es la firma del apagado). Con las visitas reales casi en cero, la semana
+  tuvo ~10 consultas; el criterio pide "unas pocas por día". Cómo se detectó: `dig` sin
+  respuesta en 3 resolvers (sistema, 1.1.1.1, 8.8.8.8), MCP `execute_sql` →
+  "Database is possibly not accessible at the moment", y `query_logs` (postgres_logs) muestra el
+  punto de restauración. Restaurable **90 días** desde el dashboard (los docs de hoy dicen 90,
+  no 1 año).
+  **Arreglos (2026-10-28):** (1) la función corre **cada 3 horas** (`0 */3 * * *`, 8 veces al
+  día) y por pasada hace 3 lecturas (`piezas`, `categorias`, `contenido_sitio`) + 1 escritura
+  (upsert en `public.keepalive`, ver `supabase/keepalive.sql`); (2) el sitio ya no depende de
+  que Supabase esté vivo para mostrar el catálogo (ver "Copia de respaldo del catálogo").
+  **Garantía real:** plan Pro de Supabase (los proyectos de pago no se pausan). Si vuelve a
+  pausarse con esto activo, subir a Pro.
 - **Si vuelve a pasar:** confirmar primero con `select count(*) from auth.users` (o
   similar) separado por un par de minutos de espera antes de correr cualquier migración de
   reconstrucción. Si tras esperar sigue en cero, ahí sí se asume borrado y se reconstruye
   desde `supabase/*.sql` como dice el comentario de cabecera de `schema.sql`.
+
+### Copia de respaldo del catálogo (2026-10-28)
+
+Tres pausas en cuatro semanas dejaron el catálogo caído para los visitantes. Ahora
+`getCatalogo()` (`assets/catalogo.js`) intenta Supabase y, si falla o no responde en 5 s,
+lee `assets/catalogo-respaldo.json` (4 categorías + 15 piezas, fotos desde `assets/piezas/`).
+En ese modo (`modoRespaldo` en `main.js`) la galería muestra un aviso ("Estás viendo nuestro
+catálogo guardado…"), **oculta la disponibilidad** (la copia puede estar vieja), y las piezas
+llevan `id: null` para que el registro de cotizaciones no intente guardar un UUID inválido.
+Textos editables, sugerencias y registro de visitas ya degradaban solos (texto fijo del HTML,
+lista vacía, fallo silencioso).
+
+- **Mantenerla al día:** cuando se agrega/quita/renombra una pieza o categoría (desde `/admin`
+  o por SQL), regenerar el JSON desde la base (mismas columnas que `getCategorias/getPiezas`)
+  y que cada pieza tenga su foto en `assets/piezas/`. Las piezas del respaldo usan
+  `foto.storage_path = "assets/piezas/<archivo>.jpeg"` aunque en la base apunten a Storage.
+  Si se sube una foto nueva solo por `/admin`, hay que copiarla también a `assets/piezas/`.
+- **Probarla de verdad:** con Supabase pausado la página lo usa sola (fue la prueba del
+  2026-10-28: 15 piezas, modal y WhatsApp OK, aparece a los ~80 ms). En local se puede forzar
+  bloqueando `*.supabase.co`.
+- **Sin reintentos de lectura:** `createClient(..., { db: { retry: false } })`. Con el
+  valor por defecto, la librería reintenta 3 veces (1 s + 2 s + 4 s) y el respaldo tardaba
+  ~7,6 s en aparecer. Las lecturas (GET/HEAD) además se cortan a los 10 s (`fetchConTiempo`).
+- **supabase-js propio:** `assets/vendor/supabase-2.118.0.js` (UMD, 218 KB / 55 KB gzip) se
+  carga con `<script defer>` en `index.html` y `admin/index.html` antes de los módulos y deja
+  `window.supabase`. Antes era `import ... from "https://esm.sh/@supabase/supabase-js@2"`
+  (sin versión fija, ~8 pedidos en cascada, y si esm.sh fallaba **todo el JS moría,
+  incluidos los botones de WhatsApp**). Para actualizar: bajar
+  `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@<versión>/dist/umd/supabase.js`, cambiar
+  el nombre del archivo y las dos etiquetas `<script>` (y la regla de caché `/assets/vendor/*`
+  en `netlify.toml`, que es de 1 año porque el nombre lleva la versión).
 
 ### Cómo llegamos acá (historia condensada)
 
@@ -485,8 +533,25 @@ requerir abrir sesión nueva para aparecer listadas.
   (2) Fotos de las 7 piezas nuevas: varias parecen de generador de IA (modelo en estudio).
   El título de la galería ya NO dice "Fotografiadas en nuestro taller" (ahora: "Algunas de
   las piezas que encuentras en nuestro local"); si se reemplazan por fotos propias se puede
-  volver a un título más fuerte. (3) Verificar en Netlify → Logs → Functions que
-  `keepalive-supabase` corre cada 2 días.
+  volver a un título más fuerte. (3) ~~Verificar que `keepalive-supabase` corre~~ — verificado
+  por los logs de Supabase (corrió 15–27 oct) pero **no bastó**: ver "Tercera pausa".
+- **Análisis y arreglos del 2026-10-28** (a pedido del dueño: "analiza la página y arregla
+  todo"): causa de la tercera pausa, respaldo del catálogo, supabase-js propio, keep-alive
+  cada 3 h, JSON-LD `JewelryStore` + título/descripción SEO, caché de imágenes y de
+  `/assets/vendor/*` en `netlify.toml`, `aria-label` del botón de menú ("Cerrar menú"),
+  `role="status"/"alert"` en los mensajes de Sugerencias.
+  - **Por aplicar en la base cuando el proyecto vuelva:** `supabase/keepalive.sql`
+    (tabla `public.keepalive` + límites de tamaño en `visitas`/`cotizaciones`/`sugerencias`).
+    La función ya está desplegada y funciona sin la tabla (solo falla la escritura, las
+    lecturas igual cuentan); al aplicarla, integrar el SQL a `schema.sql`/`policies.sql`.
+  - **Pendiente de verificar tras reanudar:** `GET /auth/v1/settings` → `disable_signup`
+    (¿sigue abierto el registro público?), que el catálogo en vivo vuelva a tener
+    disponibilidad, y que `catalogo-respaldo.json` coincida con la base (15 piezas).
+  - **Idea no hecha:** Content-Security-Policy (ahora sería viable: ya no hay scripts de
+    terceros; hay que permitir estilos inline, Google Fonts, el iframe de Google Maps y
+    `*.supabase.co`). Requiere probarla con todas las funciones antes de activarla.
+  - **JSON-LD / dominio:** si se compra `joyeriadc.com`, actualizar también `url` e `image`
+    del bloque `application/ld+json` de `index.html`.
 - **Worktrees viejos** en `.claude/worktrees/` (`frosty-archimedes-7cd038`,
   `jewelry-interface-improvements-fdc74c`): no se despliegan; pertenecen a sesiones de
   Claude Code anteriores — archivarlas desde la app los limpia.

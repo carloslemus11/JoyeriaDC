@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Joyería DC</title>
-<meta name="description" content="Joyas en oro 18K en Ibagué — anillos, cadenas y pulseras. Cotiza por WhatsApp y déjanos tu sugerencia.">
+<title>Joyería DC · Joyas en oro 18K en Ibagué</title>
+<meta name="description" content="Anillos, cadenas y pulseras en oro 18K en C.C. Los Panches, Ibagué. Cotiza por WhatsApp, con garantía de 6 meses y envíos a todo Colombia.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -25,7 +25,34 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "JewelryStore",
+  "name": "Joyería DC",
+  "description": "Joyas en oro 18K: anillos, cadenas y pulseras. Cotización personalizada por WhatsApp.",
+  "url": "https://joyeriadc.netlify.app/",
+  "image": "https://joyeriadc.netlify.app/assets/og-image.jpg",
+  "telephone": "+12405933943",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "C.C. Los Panches, local 53",
+    "addressLocality": "Ibagué",
+    "addressRegion": "Tolima",
+    "addressCountry": "CO"
+  },
+  "geo": { "@type": "GeoCoordinates", "latitude": 4.4418983, "longitude": -75.2378117 },
+  "openingHoursSpecification": [{
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "opens": "09:00",
+    "closes": "17:00"
+  }],
+  "sameAs": ["https://www.instagram.com/joyeriadc__/"]
+}
+</script>
 <script src="assets/config.js"></script>
+<script defer src="assets/vendor/supabase-2.118.0.js"></script>
 </head>
 <body class="silk">
 <div class="page-silk" aria-hidden="true"></div>
@@ -317,8 +344,8 @@
             <textarea id="suggText" name="suggText" rows="4" maxlength="280" placeholder="Cuéntanos tu idea o sugerencia..." required></textarea>
           </div>
           <button type="submit" class="btn btn-fill" style="align-self:flex-start;">Enviar sugerencia</button>
-          <p class="sugg-thanks" id="suggThanks" hidden>¡Gracias! Tu sugerencia se publicará cuando la revisemos.</p>
-          <p class="sugg-thanks" id="suggError" hidden style="color:#B3261E;">No se pudo enviar tu sugerencia. Intenta de nuevo.</p>
+          <p class="sugg-thanks" id="suggThanks" role="status" hidden>¡Gracias! Tu sugerencia se publicará cuando la revisemos.</p>
+          <p class="sugg-thanks" id="suggError" role="alert" hidden style="color:#B3261E;">No se pudo enviar tu sugerencia. Intenta de nuevo.</p>
         </form>
 
         <ul class="sugg-list" id="suggList">

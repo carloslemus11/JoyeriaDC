@@ -1,0 +1,239 @@
+{
+  "_nota": "Copia de respaldo del catálogo: se usa solo si Supabase no responde (assets/catalogo.js). Regenerar cuando cambie el catálogo; ver CLAUDE.md.",
+  "generado": "2026-10-28",
+  "categorias": [
+    {
+      "id": "anillos",
+      "nombre": "Anillos",
+      "slug": "anillos",
+      "descripcion": "Solitarios, alianzas y anillos con piedras — clásicos o hechos a tu medida.",
+      "cta_label": "Cotizar anillo →",
+      "cta_msg": "Hola, quiero cotizar un anillo en oro 18K.",
+      "orden": 1
+    },
+    {
+      "id": "cadenas",
+      "nombre": "Cadenas",
+      "slug": "cadenas",
+      "descripcion": "Cubanas, veneciana y barbadas en distintos gramajes, con o sin dije.",
+      "cta_label": "Cotizar cadena →",
+      "cta_msg": "Hola, quiero cotizar una cadena en oro 18K.",
+      "orden": 2
+    },
+    {
+      "id": "pulseras",
+      "nombre": "Pulseras",
+      "slug": "pulseras",
+      "descripcion": "Tejidas, de eslabón fino o con dijes — para regalar o para ti.",
+      "cta_label": "Cotizar pulsera →",
+      "cta_msg": "Hola, quiero cotizar una pulsera en oro 18K.",
+      "orden": 3
+    },
+    {
+      "id": "dijes-accesorios",
+      "nombre": "Dijes y accesorios",
+      "slug": "dijes-accesorios",
+      "descripcion": "Iniciales, símbolos y detalles pequeños que hacen la diferencia.",
+      "cta_label": "Cotizar accesorio →",
+      "cta_msg": "Hola, quiero cotizar un dije o accesorio en oro 18K.",
+      "orden": 4
+    }
+  ],
+  "piezas": [
+    {
+      "id": null,
+      "nombre": "Anillo corazón 15",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 1,
+      "categoria_id": "anillos",
+      "foto": {
+        "storage_path": "assets/piezas/corona-15.jpeg",
+        "alt": "Anillo corazón 15",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Anillo corona",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 2,
+      "categoria_id": "anillos",
+      "foto": {
+        "storage_path": "assets/piezas/corona-colores.jpeg",
+        "alt": "Anillo corona",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Anillo con zafiro",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 3,
+      "categoria_id": "anillos",
+      "foto": {
+        "storage_path": "assets/piezas/anillo-azul.jpeg",
+        "alt": "Anillo con zafiro",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Anillo con esmeralda",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 4,
+      "categoria_id": "anillos",
+      "foto": {
+        "storage_path": "assets/piezas/anillo-verde.jpeg",
+        "alt": "Anillo con esmeralda",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Banda con esmeraldas",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 5,
+      "categoria_id": "anillos",
+      "foto": {
+        "storage_path": "assets/piezas/banda-verde.jpeg",
+        "alt": "Banda con esmeraldas",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Cadena con cruz",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 6,
+      "categoria_id": "cadenas",
+      "foto": {
+        "storage_path": "assets/piezas/cadena-cruz.jpeg",
+        "alt": "Cadena con cruz",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Pulsera tricolor",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 7,
+      "categoria_id": "pulseras",
+      "foto": {
+        "storage_path": "assets/piezas/pulsera-colombia.jpeg",
+        "alt": "Pulsera tricolor",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Pulsera de esferas",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 8,
+      "categoria_id": "pulseras",
+      "foto": {
+        "storage_path": "assets/piezas/pulsera-esferas.jpeg",
+        "alt": "Pulsera de esferas",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Argollas de matrimonio",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 9,
+      "categoria_id": "anillos",
+      "foto": {
+        "storage_path": "assets/piezas/argollas.jpeg",
+        "alt": "Argollas de matrimonio",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Conjunto esmeralda (aretes, collar y anillo)",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 10,
+      "categoria_id": "dijes-accesorios",
+      "foto": {
+        "storage_path": "assets/piezas/conjunto-esmeralda.jpeg",
+        "alt": "Conjunto esmeralda (aretes, collar y anillo)",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Cadena con crucifijo",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 11,
+      "categoria_id": "cadenas",
+      "foto": {
+        "storage_path": "assets/piezas/cadena-crucifijo.jpeg",
+        "alt": "Cadena con crucifijo",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Rosario con dije de Virgen",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 12,
+      "categoria_id": "cadenas",
+      "foto": {
+        "storage_path": "assets/piezas/rosario-virgen.jpeg",
+        "alt": "Rosario con dije de Virgen",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Pulsera y anillo de mariposas",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 13,
+      "categoria_id": "pulseras",
+      "foto": {
+        "storage_path": "assets/piezas/pulsera-mariposas.jpeg",
+        "alt": "Pulsera y anillo de mariposas",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Anillo de corazón con piedra",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 14,
+      "categoria_id": "anillos",
+      "foto": {
+        "storage_path": "assets/piezas/anillo-corazon-piedra.jpeg",
+        "alt": "Anillo de corazón con piedra",
+        "orden": 0
+      }
+    },
+    {
+      "id": null,
+      "nombre": "Collar con dije de piedra verde",
+      "descripcion": null,
+      "disponibilidad": "disponible",
+      "orden": 16,
+      "categoria_id": "cadenas",
+      "foto": {
+        "storage_path": "assets/piezas/collar-piedra-verde.jpeg",
+        "alt": "Collar con dije de piedra verde",
+        "orden": 0
+      }
+    }
+  ]
+}

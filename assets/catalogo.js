@@ -39,3 +39,34 @@ export async function getPiezas() {
     return { ...p, fotos, foto: fotos[0] || null };
   });
 }
+
+/* Rechaza si la promesa no responde en `ms` (base colgada); el rechazo tardío queda atendido. */
+function conLimite(promesa, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("tiempo agotado")), ms);
+    promesa.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); }
+    );
+  });
+}
+
+/** Catálogo completo: { categorias, piezas, respaldo }.
+ * Primero intenta Supabase. Si falla (proyecto pausado, sin red, lento), usa la copia guardada
+ * en assets/catalogo-respaldo.json — así el catálogo se sigue viendo y se puede cotizar por
+ * WhatsApp aunque la base no responda. `respaldo: true` avisa a la interfaz para que no muestre
+ * disponibilidad (la copia puede estar desactualizada). Se vuelve a generar cuando cambia el
+ * catálogo (ver CLAUDE.md, "Copia de respaldo del catálogo"). */
+export async function getCatalogo() {
+  try {
+    const [categorias, piezas] = await conLimite(Promise.all([getCategorias(), getPiezas()]), 5000);
+    if (!piezas.length) throw new Error("catálogo vacío");
+    return { categorias, piezas, respaldo: false };
+  } catch (e) {
+    console.warn("[Joyería DC] Supabase no respondió; se usa el catálogo de respaldo:", e && e.message);
+    const res = await fetch("assets/catalogo-respaldo.json");
+    if (!res.ok) throw new Error("respaldo no disponible (" + res.status + ")");
+    const r = await res.json();
+    return { categorias: r.categorias || [], piezas: r.piezas || [], respaldo: true };
+  }
+}

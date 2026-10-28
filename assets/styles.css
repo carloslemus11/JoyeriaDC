@@ -754,3 +754,11 @@
     color:var(--sec-choco-gold);
     border-color:var(--sec-choco-gold);
   }
+
+  /* Aviso cuando el catálogo viene de la copia de respaldo (Supabase no respondió) */
+  .catalogo-aviso{
+    margin:0 0 18px; padding:10px 14px;
+    border:1px solid var(--border); border-left:3px solid var(--gold-text, var(--gold-strong));
+    background:var(--surface); color:var(--ink-soft);
+    font-size:14px; line-height:1.5; border-radius:var(--radius);
+  }

@@ -87,3 +87,28 @@
   for = "/admin/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
+
+# Caché de imágenes y de la librería propia. Antes todo se revalidaba en cada visita
+# (max-age=0), incluso las fotos de las piezas. Se deja SIN caché largo el HTML, el CSS y el JS
+# del sitio para que los cambios se vean al instante tras cada despliegue.
+# - vendor/: archivo con versión en el nombre → nunca cambia → 1 año.
+# - piezas/ y hero: 7 días (las fotos nuevas del panel usan nombres únicos en Storage).
+[[headers]]
+  for = "/assets/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/piezas/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/assets/hero-joya.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/assets/og-image.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

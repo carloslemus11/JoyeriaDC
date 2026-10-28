@@ -1,6 +1,6 @@
 /* Joyería DC — script principal del sitio público. */
 import { healthcheck } from "./supabase-client.js";
-import { getCategorias, getPiezas, fotoUrl } from "./catalogo.js";
+import { getCatalogo, fotoUrl } from "./catalogo.js";
 import {
   getSugerenciasAprobadas, enviarSugerencia, registrarCotizacion, registrarVisita,
 } from "./interacciones.js";
@@ -103,15 +103,19 @@ function textoCta(pieza) {
     : "Cotizar esta pieza";
 }
 
+/* true cuando el catálogo viene de la copia de respaldo (Supabase no respondió): en ese modo no
+ * se muestra disponibilidad, porque la copia puede estar desactualizada. */
+var modoRespaldo = false;
+
 function renderPiezas(grid, piezas, catMap) {
   grid.innerHTML = "";
   piezas.forEach(function (pieza) {
     var catNombre = (catMap && catMap[pieza.categoria_id]) || "";
     var disp = dispDe(pieza);
     var cell = el("article", {
-      class: "gallery-item" + (pieza.disponibilidad === "agotada" ? " is-agotada" : ""),
-      "data-pieza-id": pieza.id
+      class: "gallery-item" + (!modoRespaldo && pieza.disponibilidad === "agotada" ? " is-agotada" : "")
     });
+    if (pieza.id) cell.setAttribute("data-pieza-id", pieza.id);
 
     var trigger = el("button", {
       class: "gallery-open", type: "button",
@@ -145,9 +149,11 @@ function renderPiezas(grid, piezas, catMap) {
     meta.textContent = metaPieza(catNombre);
     trigger.appendChild(meta);
 
-    var stock = el("span", { class: "gallery-stock " + disp.cls });
-    stock.textContent = disp.label;
-    trigger.appendChild(stock);
+    if (!modoRespaldo) {
+      var stock = el("span", { class: "gallery-stock " + disp.cls });
+      stock.textContent = disp.label;
+      trigger.appendChild(stock);
+    }
 
     var hint = el("span", { class: "gallery-hint" }, "Ver pieza");
     trigger.appendChild(hint);
@@ -210,8 +216,9 @@ function abrirPieza(pieza, catNombre, returnFocusEl) {
   var disp = dispDe(pieza);
   var stock = document.getElementById("piezaModalStock");
   if (stock) {
-    stock.textContent = disp.label;
+    stock.textContent = modoRespaldo ? "" : disp.label;
     stock.className = "pieza-modal__stock " + disp.cls;
+    stock.hidden = modoRespaldo;
   }
 
   var desc = document.getElementById("piezaModalDesc");
@@ -221,8 +228,8 @@ function abrirPieza(pieza, catNombre, returnFocusEl) {
   var cta = document.getElementById("piezaModalCta");
   cta.setAttribute("data-wa-msg", "Hola, quiero comprar/cotizar: " + pieza.nombre + ".");
   cta.setAttribute("data-cotiza", pieza.nombre);
-  cta.setAttribute("data-pieza-id", pieza.id);
-  cta.textContent = textoCta(pieza);
+  cta.setAttribute("data-pieza-id", pieza.id || "");
+  cta.textContent = modoRespaldo ? "Cotizar esta pieza" : textoCta(pieza);
   wireWaLinks(piezaModal);
 
   piezaModal.hidden = false;
@@ -262,11 +269,19 @@ async function cargarCatalogo() {
   var galleryGrid = document.getElementById("galleryGrid");
   if (!catGrid && !galleryGrid) return;
   try {
-    var [categorias, piezas] = await Promise.all([getCategorias(), getPiezas()]);
+    var cat = await getCatalogo();
+    modoRespaldo = cat.respaldo;
     var catMap = {};
-    categorias.forEach(function (c) { catMap[c.id] = c.nombre; });
-    if (catGrid) renderCategorias(catGrid, categorias);
-    if (galleryGrid) renderPiezas(galleryGrid, piezas, catMap);
+    cat.categorias.forEach(function (c) { catMap[c.id] = c.nombre; });
+    if (catGrid) renderCategorias(catGrid, cat.categorias);
+    if (galleryGrid) {
+      renderPiezas(galleryGrid, cat.piezas, catMap);
+      if (modoRespaldo) {
+        var aviso = el("p", { class: "catalogo-aviso" },
+          "Estás viendo nuestro catálogo guardado. Para confirmar la disponibilidad de una pieza, escríbenos por WhatsApp.");
+        galleryGrid.parentNode.insertBefore(aviso, galleryGrid);
+      }
+    }
     observeReveal([].slice.call(document.querySelectorAll("#coleccion .reveal:not(.is-visible)")));
   } catch (e) {
     console.warn("[Joyería DC] No se pudo cargar el catálogo:", e && e.message);
@@ -315,11 +330,13 @@ function initSitio() {
   toggle.addEventListener("click", function () {
     var open = linksEl.classList.toggle("is-open");
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    toggle.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
   });
   linksEl.querySelectorAll("a").forEach(function (a) {
     a.addEventListener("click", function () {
       linksEl.classList.remove("is-open");
       toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", "Abrir menú");
     });
   });
 
