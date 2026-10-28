@@ -38,8 +38,8 @@ protection"* (chequea contra HaveIBeenPwned). Es un aviso de seguridad de Supaba
 - Deja **Email** habilitado.
 - **Desactiva "Allow new users to sign up"** (o "Enable sign-ups").
   Así nadie puede auto-registrarse: los admin se crean a mano.
-  > Se había **activado** en la Fase 6 (cuentas de cliente). Con Fase 6 retirada,
-  > **hay que volver a desactivarlo** — a hoy sigue activo.
+  > Se había **activado** en la Fase 6 (cuentas de cliente). **Ya está desactivado**
+  > (verificado el 2026-10-28: `GET /auth/v1/settings` devuelve `disable_signup: true`).
 - Opcional: desactiva "Confirm email" para el admin, o confírmalo manualmente en el paso 2.2.
 
 ### 2.4 Site URL (para el sitio en producción)

@@ -82,9 +82,12 @@ JOYERIA.DC./
   `supabase/*.sql`.** Si se recrea el proyecto: correr `schema.sql` → `policies.sql` →
   `storage.sql` → `funciones.sql` → `seed-catalogo.sql` en el SQL Editor.
 - **Tablas** (`public`): `categorias`, `piezas`, `pieza_fotos`, `sugerencias`,
-  `cotizaciones`, `contenido_sitio`, `perfiles`, `visitas`. `piezas.disponibilidad`
-  (`'disponible'|'encargo'|'agotada'`, default `'disponible'`) — migración
-  `piezas_disponibilidad` (2026-09-01).
+  `cotizaciones`, `contenido_sitio`, `perfiles`, `visitas`, `keepalive`.
+  `piezas.disponibilidad` (`'disponible'|'encargo'|'agotada'`, default `'disponible'`) —
+  migración `piezas_disponibilidad` (2026-09-01). `keepalive` (una sola fila, `id = 1`) la
+  escribe la función programada de Netlify; además `visitas`/`cotizaciones`/`sugerencias`
+  tienen CHECK de largo máximo porque aceptan INSERT público — migración
+  `keepalive_y_limites` (2026-10-28), ya integrada a `schema.sql`/`policies.sql`.
 - **Regla RLS:** el público (anon) solo LEE catálogo/textos activos e INSERTA
   sugerencias / cotizaciones / visitas. Todo lo demás exige sesión admin
   (`private.is_admin()` = tener fila en `public.perfiles` con `rol='admin'`). Hoy hay **un
@@ -96,8 +99,9 @@ JOYERIA.DC./
 - **Función RPC:** `public.resumen_visitas()` (SECURITY INVOKER, solo `authenticated`) —
   agrega el panel de Visitas (hoy, 30 días, por día, por fuente/dispositivo/país).
 - **Pendientes manuales en el dashboard** (no se pueden por API) — ver `supabase/setup.md`:
-  1. **Desactivar "Allow new users to sign up"** (se activó para la Fase 6, ya retirada;
-     todavía sigue activo, hay que apagarlo).
+  1. ~~Desactivar "Allow new users to sign up"~~ — **YA ESTÁ APAGADO** (verificado el
+     2026-10-28: `GET /auth/v1/settings` → `disable_signup: true`). Antes de asumirlo
+     pendiente, comprobarlo así: `curl -s "$SUPABASE_URL/auth/v1/settings" -H "apikey: $ANON"`.
   2. Site URL = `https://joyeriadc.netlify.app` en Authentication → URL Configuration.
   3. Activar "Leaked password protection" (Attack Protection) — solo plan Pro; opcional.
 
@@ -150,7 +154,7 @@ el dashboard de Supabase. **Lección para la próxima vez que esto pase:**
   no 1 año).
   **Arreglos (2026-10-28):** (1) la función corre **cada 3 horas** (`0 */3 * * *`, 8 veces al
   día) y por pasada hace 3 lecturas (`piezas`, `categorias`, `contenido_sitio`) + 1 escritura
-  (upsert en `public.keepalive`, ver `supabase/keepalive.sql`); (2) el sitio ya no depende de
+  (upsert en `public.keepalive`, ver `schema.sql`/`policies.sql`); (2) el sitio ya no depende de
   que Supabase esté vivo para mostrar el catálogo (ver "Copia de respaldo del catálogo").
   **Garantía real:** plan Pro de Supabase (los proyectos de pago no se pausan). Si vuelve a
   pausarse con esto activo, subir a Pro.
@@ -513,8 +517,10 @@ requerir abrir sesión nueva para aparecer listadas.
   puede quitar por CSS** (va en un frame aislado). Se apaga en el dashboard: Netlify →
   Project configuration → General → "Powered by Netlify badge" → off → Save. Requiere la
   sesión del dueño. Ref: <https://docs.netlify.com/manage/projects/powered-by-netlify-badge/>
-- **Supabase Auth (dashboard):** desactivar "Allow new users to sign up"; poner Site URL;
-  (opcional, solo Pro) "Leaked password protection". Ver `supabase/setup.md`.
+- **Supabase Auth (dashboard):** el registro público ya está apagado (verificado
+  2026-10-28). Falta confirmar Site URL (`https://joyeriadc.netlify.app`; la API pública no lo
+  muestra, hay que mirarlo en Authentication → URL Configuration) y, opcional y solo Pro,
+  "Leaked password protection". Ver `supabase/setup.md`.
 - **Dominio propio `joyeriadc.com`** — el usuario lo hará más adelante. Recomendado:
   comprarlo a través de Netlify (Domain management → Add a domain → Buy) que configura DNS +
   SSL solo. Después: cambiar el Site URL de Supabase Auth a `https://joyeriadc.com` y
@@ -540,13 +546,19 @@ requerir abrir sesión nueva para aparecer listadas.
   cada 3 h, JSON-LD `JewelryStore` + título/descripción SEO, caché de imágenes y de
   `/assets/vendor/*` en `netlify.toml`, `aria-label` del botón de menú ("Cerrar menú"),
   `role="status"/"alert"` en los mensajes de Sugerencias.
-  - **Por aplicar en la base cuando el proyecto vuelva:** `supabase/keepalive.sql`
-    (tabla `public.keepalive` + límites de tamaño en `visitas`/`cotizaciones`/`sugerencias`).
-    La función ya está desplegada y funciona sin la tabla (solo falla la escritura, las
-    lecturas igual cuentan); al aplicarla, integrar el SQL a `schema.sql`/`policies.sql`.
-  - **Pendiente de verificar tras reanudar:** `GET /auth/v1/settings` → `disable_signup`
-    (¿sigue abierto el registro público?), que el catálogo en vivo vuelva a tener
-    disponibilidad, y que `catalogo-respaldo.json` coincida con la base (15 piezas).
+  - **Hecho el mismo día, tras reanudar Supabase (18:30 UTC, datos intactos):** migración
+    `keepalive_y_limites` aplicada e integrada a `schema.sql`/`policies.sql`; upsert de
+    `keepalive` probado con la clave pública (201 y luego 200; id=2 → rechazado por RLS; DELETE
+    no borra); un registro de 400 caracteres en `cotizaciones` → 400 por el CHECK; el
+    código real de la función ejecutado desde el navegador (3 lecturas 200 + escritura 200 en
+    1,3 s); `disable_signup: true`; `catalogo-respaldo.json` idéntico a la base (nombres,
+    orden, categorías, descripciones, fotos y archivos); formulario de Sugerencias OK en
+    producción (3/3 envíos; filas de prueba borradas — hubo 1 error de red aislado en el
+    primer intento que no se pudo reproducir).
+  - **Pendiente de confirmar en unos días:** que la función programada (cada 3 h, minuto 0 UTC
+    de las 00/03/06/…/21) deje `public.keepalive.ultimo` al día y que Supabase no se pause:
+    `select ultimo, now()-ultimo from public.keepalive`. Primer disparo esperado 21:00 UTC del
+    2026-10-28.
   - **Idea no hecha:** Content-Security-Policy (ahora sería viable: ya no hay scripts de
     terceros; hay que permitir estilos inline, Google Fonts, el iframe de Google Maps y
     `*.supabase.co`). Requiere probarla con todas las funciones antes de activarla.

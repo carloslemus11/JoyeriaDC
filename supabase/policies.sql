@@ -37,6 +37,7 @@ alter table public.cotizaciones    enable row level security;
 alter table public.contenido_sitio enable row level security;
 alter table public.perfiles        enable row level security;
 alter table public.visitas         enable row level security;
+alter table public.keepalive       enable row level security;
 
 -- ---------- Catálogo ----------
 create policy categorias_select_publico on public.categorias
@@ -91,3 +92,9 @@ create policy visitas_insert_publico on public.visitas
   for insert with check (true);
 create policy visitas_admin_select on public.visitas
   for select using (private.is_admin());
+
+-- ---------- Keepalive (migración keepalive_y_limites, 2026-10-28) ----------
+-- Solo la fila id = 1; sin política de DELETE. Lo usa la función programada de Netlify.
+create policy keepalive_select on public.keepalive for select using (id = 1);
+create policy keepalive_insert on public.keepalive for insert with check (id = 1);
+create policy keepalive_update on public.keepalive for update using (id = 1) with check (id = 1);

@@ -5,7 +5,7 @@
 // sola lectura cada 2 días NO bastó: el proyecto se pausó el 2026-10-28 aunque la función corrió
 // el 27. Ahora corre cada 3 horas (8 veces al día) y en cada pasada hace 3 lecturas del
 // catálogo/textos (las mismas que usa el sitio) y 1 escritura en la tabla `keepalive`
-// (supabase/keepalive.sql). La escritura es "mejor esfuerzo": si la tabla aún no existe, las
+// (ver supabase/schema.sql y policies.sql). La escritura es "mejor esfuerzo": si fallara, las
 // lecturas igual cuentan. La clave es la publishable: pública por diseño.
 const SUPABASE_URL = "https://ardfyksmwwwignoejaft.supabase.co";
 const PUBLISHABLE_KEY = "sb_publishable_mxaighjTzkTes_A_WSL3Mg_DorwIQRE";
