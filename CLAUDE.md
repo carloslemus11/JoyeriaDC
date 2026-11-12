@@ -42,6 +42,7 @@ JOYERIA.DC./
 │   │   └── supabase-2.118.0.js # supabase-js (UMD, versión fija) alojado en el sitio — ya NO se carga de esm.sh
 │   ├── catalogo.js             # Lectura del catálogo (categorías/piezas/fotoUrl) + getCatalogo() con respaldo
 │   ├── catalogo-respaldo.json  # Copia estática del catálogo (15 piezas): se usa si Supabase no responde
+│   ├── personalizados.jpeg     # Foto de la sección #personalizados (2 anillos de calavera, aportada por el dueño 2026-11-12)
 │   ├── interacciones.js        # Sugerencias + registro de cotizaciones + registro de visitas
 │   ├── contenido.js            # Textos editables del sitio ([data-cs])
 │   └── piezas/                 # Fotos de piezas (15 al 2026-10-01; las 9 originales también
@@ -275,9 +276,9 @@ en 2 sitios** y cada zona tiene su propio fondo, a pedido del usuario:
 | Colección (`#coleccion`) | **Marfil liso** (`--sec-marfil`, opaco, sin foto — las joyas son las protagonistas) |
 | Atelier (`#atelier`) | **Seda marfil** (la "sección destacada" con seda) |
 | Garantía (`#garantia`) | **Chocolate oscuro** (`--sec-choco`) con texto crema (`--sec-choco-ink` / `--sec-choco-soft` / `--sec-choco-gold`) |
-| FAQ (`#faq`), Ubicación (`#ubicacion`), Sugerencias (`#sugerencias`), footer | Blanco cálido (`--sec-blanco`) |
+| Personalizados (`#personalizados`), FAQ (`#faq`), Ubicación (`#ubicacion`), Sugerencias (`#sugerencias`), footer | Blanco cálido (`--sec-blanco`) |
 
-Orden de secciones en `index.html`: hero → trust → `#coleccion` → `#atelier` → `#garantia`
+Orden de secciones en `index.html`: hero → trust → `#coleccion` → `#personalizados` → `#atelier` → `#garantia`
 → `#faq` → `#ubicacion` → `#sugerencias` → footer. (`#garantia` se movió **antes** de
 `#faq` para que el bloque chocolate corte entre el catálogo y la info práctica.)
 
@@ -355,10 +356,11 @@ solo con la D y la C, sin tocar los colores de fondo". Estado actual:
 
 | Sección | id | Contenido |
 |---|---|---|
-| Nav | — | Logo + "Joyería DC", links (Colección / Atelier / Preguntas / Ubicación), botón "Cotizar" |
+| Nav | — | Logo + "Joyería DC", links (Colección / Personalizados / Atelier / Preguntas / Ubicación), botón "Cotizar" |
 | Hero | `#top` | Titular, bajada, CTAs, fila de stats (18K / seguidores IG / local), **foto protagonista de una pieza** (`assets/hero-joya.jpeg`) + monograma DC pequeño con diamante debajo (`.hero-visual` / `.logo-lockup--sm`) |
 | Franja de confianza | — | `.trust-strip` tras el hero: 5 mensajes con ícono (Oro 18K · compra presencial en Ibagué · atención personalizada · garantía 6 meses · envíos + pagos). Textos con `data-cs="trust1..5"`. No interactiva |
 | Colección | `#coleccion` | 4 tarjetas de categoría + galería de piezas, **ambas desde Supabase** (`#catGrid`, `#galleryGrid`, contenedores vacíos que rellena `main.js`). Cada pieza es una tarjeta (`.gallery-item`) con nombre grande, "Categoría · Oro 18K", **etiqueta de disponibilidad** (disponible / por encargo / agotada), pista "Ver pieza" (toda la tarjeta es el disparador de la vista ampliada; **el botón "Cotizar esta pieza" vive en el modal**, no en la tarjeta). "Agotada" atenúa la tarjeta y el botón pasa a "Consultar por WhatsApp". Estados de carga (shimmer) y de error (mensaje + WhatsApp). |
+| Personalizados | `#personalizados` | Foto (`assets/personalizados.jpeg`, dos anillos de calavera en oro, uno con corona de picos y otro con piedras verdes) + título "Una pieza hecha a tu medida." + invitación a contar la idea por WhatsApp + botón "Cotizar una pieza personalizada" (`data-cotiza-origen="personalizados"`). Es HTML estático (no depende de Supabase). Textos editables: `pers_titulo`, `pers_texto` (grupo "Personalizados" en `/admin` → Textos). El texto **no promete plazos, materiales ni precios** a propósito (no están confirmados). Enlazada desde la nav y el footer |
 | Atelier | `#atelier` | 3 bloques "por qué elegirnos" |
 | Preguntas frecuentes | `#faq` | Acordeón `<details>` nativo (sin JS). Respuestas reales: oro 18K, verlas en persona, horario, formas de pago, envíos, garantía (resumen + enlace a `#garantia`) |
 | Garantía | `#garantia` | Texto formal de 4 puntos (autenticidad del oro · defectos de fabricación 6 meses · exclusiones · mantenimiento). Editable desde `/admin` → "Textos". Botón "Preguntar por la garantía" (WhatsApp) |
@@ -506,6 +508,16 @@ requerir abrir sesión nueva para aparecer listadas.
     FAQ con respuestas reales, sección `#garantia`, franja de confianza a 5, horario y
     número visibles en Ubicación, mapa de Google Maps incrustado, grupos nuevos en
     `/admin` → "Textos" (`ubic_horario`, `trust1..5`, `faq_*`, `garantia_*`).
+  - **Personalizados (2026-11-12):** sección nueva con la foto que mandó el dueño (ver
+    tabla de secciones). **Aviso para el dueño:** en el anillo izquierdo se alcanza a leer
+    grabado "METALL…" dentro de la cuenca del ojo — parece una marca de otro taller; confirmar
+    que la pieza es suya o recortar/cambiar la foto.
+  - **Cambio de número de WhatsApp SIN PUBLICAR:** el checkout principal
+    (`/Users/julianlemus/JOYERIA.DC.`, rama `main`) tiene el commit local `978c863`
+    (2026-11-10, "nuevo número de WhatsApp para cotizaciones (+57 321 209 3918)", toca
+    `config.js`, `main.js`, `index.html` y `CLAUDE.md`) que **no está en `origin/main`**, así
+    que producción sigue con +1 240 593 3943. Quien lo publique debe hacer antes
+    `git pull --rebase origin main` en ese checkout (origin avanzó con Personalizados).
   - **Fuera (posible Fase C):** más fotografías por pieza en el modal (subir a Storage) y
     testimonios de clientes (el negocio aún no tiene reseñas verificables).
   - **Precios: descartados** — el usuario confirmó mantener el sitio sin precios.

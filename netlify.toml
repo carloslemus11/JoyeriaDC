@@ -112,3 +112,8 @@
   for = "/assets/og-image.jpg"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/assets/personalizados.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

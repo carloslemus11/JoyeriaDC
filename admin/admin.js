@@ -238,6 +238,10 @@ const TEXTOS_GRUPOS = [
     ["atelier2_titulo", "Bloque 2 — título", "input"], ["atelier2_texto", "Bloque 2 — texto", "textarea"],
     ["atelier3_titulo", "Bloque 3 — título", "input"], ["atelier3_texto", "Bloque 3 — texto", "textarea"],
   ]],
+  ["Personalizados", [
+    ["pers_titulo", "Título de la sección", "input"],
+    ["pers_texto", "Texto", "textarea"],
+  ]],
   ["Ubicación", [
     ["ubic_titulo", "Título", "input"],
     ["ubic_direccion", "Dirección (línea 1)", "input"],
